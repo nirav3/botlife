@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+/dist/
+client/dist/
+/public/assets/
+/public/index.html
+
+# Env / secrets
+.env
+.env.local
+*.env.local
+google_api_auth.json
+
+# Logs
+npm-debug.log*
+*.log
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo

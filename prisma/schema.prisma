@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UnitSystem {
+  METRIC
+  IMPERIAL
+}
+
+enum PlanVisibility {
+  PUBLIC        // official/sample plan (ownerId null) — visible to everyone
+  PRIVATE       // a user's own plan — visible only to its owner
+  // COACH_SHARED reserved for the future coach/client system
+}
+
+model User {
+  id                   String     @id @default(cuid())
+  email                String     @unique
+  passwordHash         String?
+  googleId             String?    @unique
+  name                 String
+  unitSystem           UnitSystem @default(METRIC)
+  securityQuestion     String?
+  securityAnswerHash   String?
+  resetToken           String?    @unique
+  resetTokenExpiresAt  DateTime?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  weightEntries    WeightEntry[]
+  workoutSessions  WorkoutSession[]
+  mealPlans        MealPlan[]
+  workoutPlans     WorkoutPlan[]
+
+  @@map("users")
+}
+
+// ─── Weight Tracking ─────────────────────────────────────────────────────────
+
+model WeightEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  weightKg  Float
+  note      String?
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("weight_entries")
+}
+
+// ─── Workout Tracking ─────────────────────────────────────────────────────────
+
+model WorkoutSession {
+  id        String    @id @default(cuid())
+  userId    String
+  name      String                      // e.g. "Push Day", "Leg Day"
+  notes     String?
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseLogs ExerciseLog[]
+
+  @@map("workout_sessions")
+}
+
+model ExerciseLog {
+  id               String   @id @default(cuid())
+  workoutSessionId String
+  exerciseName     String                    // e.g. "Bench Press"
+  muscleGroup      String?                   // e.g. "Chest"
+  orderIndex       Int      @default(0)
+  notes            String?
+  createdAt        DateTime @default(now())
+
+  workoutSession WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  sets           ExerciseSet[]
+
+  @@map("exercise_logs")
+}
+
+model ExerciseSet {
+  id            String    @id @default(cuid())
+  exerciseLogId String
+  setNumber     Int
+  weightKg      Float?                    // null for bodyweight exercises
+  reps          Int?                      // null for time-based sets
+  durationSecs  Int?                      // for planks, cardio, etc.
+  rpe           Float?                    // Rate of Perceived Exertion 1-10
+  isWarmup      Boolean   @default(false)
+  completedAt   DateTime  @default(now())
+
+  exerciseLog ExerciseLog @relation(fields: [exerciseLogId], references: [id], onDelete: Cascade)
+
+  @@map("exercise_sets")
+}
+
+// ─── Workout Plans (official samples + user-created) ─────────────────────────
+// ownerId null = official/sample plan seeded at boot (see planSeed.service.ts).
+// Same table serves both official and user-created plans, distinguished only
+// by ownership + visibility — not a parallel "custom plans" system.
+
+model WorkoutPlan {
+  id               String         @id @default(cuid())
+  ownerId          String?
+  name             String
+  description      String?
+  difficulty       String?                     // 'Beginner' | 'Intermediate' | 'Advanced'
+  goal             String?                     // 'Strength' | 'Hypertrophy' | 'Fat Loss' | 'General Fitness'
+  daysPerWeek      Int?
+  estimatedMinutes Int?
+  tags             String[]       @default([])
+  visibility       PlanVisibility @default(PRIVATE)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  owner User?     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  days  PlanDay[]
+
+  @@map("workout_plans")
+}
+
+model PlanDay {
+  id          String @id @default(cuid())
+  planId      String
+  dayNumber   Int
+  label       String
+  sessionName String
+
+  plan      WorkoutPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  exercises PlanExercise[]
+
+  @@map("plan_days")
+}
+
+model PlanExercise {
+  id          String  @id @default(cuid())
+  planDayId   String
+  name        String
+  muscleGroup String
+  notes       String?
+  orderIndex  Int     @default(0)
+
+  day  PlanDay   @relation(fields: [planDayId], references: [id], onDelete: Cascade)
+  sets PlanSet[]
+
+  @@map("plan_exercises")
+}
+
+model PlanSet {
+  id         String  @id @default(cuid())
+  exerciseId String
+  setNumber  Int
+  targetReps String
+  rpe        Float?
+  isWarmup   Boolean @default(false)
+
+  exercise PlanExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@map("plan_sets")
+}
+
+// ─── Meal Plans ───────────────────────────────────────────────────────────────
+
+model MealPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String                      // e.g. "Bulk Plan", "Cut Plan"
+  targetCalories Int?
+  targetProteinG Int?
+  targetCarbsG   Int?
+  targetFatG     Int?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meals Meal[]
+
+  @@map("meal_plans")
+}
+
+model Meal {
+  id         String   @id @default(cuid())
+  mealPlanId String
+  name       String                      // e.g. "Breakfast", "Pre-workout"
+  loggedAt   DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  mealPlan  MealPlan   @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+  foodItems FoodItem[]
+
+  @@map("meals")
+}
+
+model FoodItem {
+  id          String  @id @default(cuid())
+  mealId      String
+  name        String                      // e.g. "Chicken Breast"
+  quantity    Float                       // e.g. 200
+  unit        String                      // e.g. "g", "oz", "cup"
+  calories    Float
+  proteinG    Float   @default(0)
+  carbsG      Float   @default(0)
+  fatG        Float   @default(0)
+
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@map("food_items")
+}
