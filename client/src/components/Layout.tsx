@@ -39,8 +39,10 @@ export default function Layout() {
 
   const sidebarInner = (
     <>
-      {/* Brand */}
-      <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+      {/* Brand — extra top padding clears the notch/status bar on mobile,
+          since this drawer is a fixed panel starting at the very top of
+          the screen when open; no-op on lg+ (env resolves to 0 there too). */}
+      <div className="px-6 py-5 pt-[calc(1.25rem_+_env(safe-area-inset-top))] border-b border-gray-100 flex items-center justify-between">
         <span className="text-xl font-bold text-brand-600">💪 BotLife</span>
         <button
           onClick={() => setMobileNavOpen(false)}
@@ -119,17 +121,22 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex bg-gray-50">
-      {/* Mobile top bar — only below lg, where the sidebar becomes a drawer */}
-      <div className="lg:hidden fixed top-0 inset-x-0 z-30 flex items-center justify-between px-4 h-14 bg-white border-b border-gray-200">
-        <button
-          onClick={() => setMobileNavOpen(true)}
-          className="text-gray-600 text-xl leading-none"
-          aria-label="Open menu"
-        >
-          ☰
-        </button>
-        <span className="font-bold text-brand-600">💪 BotLife</span>
-        <span className="w-5" aria-hidden="true" />
+      {/* Mobile top bar — only below lg, where the sidebar becomes a drawer.
+          pt-[env(...)] pads for the notch/status bar instead of a fixed
+          height, so the bar grows on devices that need it and stays 56px
+          (h-14) everywhere else. */}
+      <div className="lg:hidden fixed top-0 inset-x-0 z-30 bg-white border-b border-gray-200 pt-[env(safe-area-inset-top)]">
+        <div className="flex items-center justify-between px-4 h-14">
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            className="text-gray-600 text-xl leading-none"
+            aria-label="Open menu"
+          >
+            ☰
+          </button>
+          <span className="font-bold text-brand-600">💪 BotLife</span>
+          <span className="w-5" aria-hidden="true" />
+        </div>
       </div>
 
       {/* Backdrop, closes the drawer on tap-outside */}
@@ -150,8 +157,11 @@ export default function Layout() {
         {sidebarInner}
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto pt-14 lg:pt-0">
+      {/* Main content — top offset matches the mobile bar's actual height
+          (56px + safe-area-inset-top), falls back to 0 padding on lg+ where
+          there's no fixed bar. Bottom padding clears the home-indicator area
+          on devices that have one. */}
+      <main className="flex-1 overflow-auto pt-[calc(3.5rem_+_env(safe-area-inset-top))] lg:pt-0 pb-[env(safe-area-inset-bottom)]">
         <Outlet />
       </main>
     </div>
