@@ -3,9 +3,13 @@ services:
     name: botlife-api
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build:all
-    preDeployCommand: npx prisma migrate deploy
-    startCommand: npm start
+    # --include=dev: NODE_ENV=production (below) makes plain `npm install`
+    # skip devDependencies, which would drop typescript/vite mid-build.
+    buildCommand: npm install --include=dev && npm run build:all
+    # Pre-Deploy Command isn't available on Render's free plan, so migrations
+    # run here instead. `prisma migrate deploy` is idempotent — safe to run
+    # on every start, including the free tier's frequent sleep/wake cycles.
+    startCommand: npx prisma migrate deploy && npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
