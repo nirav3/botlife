@@ -19,7 +19,14 @@ services:
       # Secrets — set these in the Render dashboard, not here:
       - key: DATABASE_URL
         sync: false
-      - key: JWT_SECRET
-        sync: false
       - key: GOOGLE_CLIENT_ID
+        sync: false
+      # Render generates and stores this itself — you'll never see or need
+      # to supply the actual value.
+      - key: JWT_SECRET
+        generateValue: true
+      # Same value as GOOGLE_CLIENT_ID above, but Vite only exposes
+      # VITE_-prefixed vars to client code at build time — needs to be set
+      # even though it isn't secret, since the client bundle is built here.
+      - key: VITE_GOOGLE_CLIENT_ID
         sync: false
