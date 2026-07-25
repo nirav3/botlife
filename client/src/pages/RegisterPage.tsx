@@ -62,7 +62,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
       <div className="bg-surface rounded-2xl shadow-lg w-full max-w-sm p-8">
         <div className="text-center mb-8">
-          <Logo className="w-10 h-10 mx-auto text-accent-violet" />
+          <Logo className="w-10 h-10 mx-auto text-ink" />
           <h1 className="text-2xl font-extrabold text-ink mt-2">Create account</h1>
           <p className="text-muted text-sm mt-1">Start tracking your lifestyle</p>
         </div>
