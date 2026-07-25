@@ -1,7 +1,7 @@
 {
-  "name": "botlife-api",
+  "name": "bodlife-api",
   "version": "1.0.0",
-  "description": "BotLife Lifestyle Tracking API - workouts, weight, meals, progressive overload",
+  "description": "BodLife Lifestyle Tracking API - workouts, weight, meals, progressive overload",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
@@ -28,6 +28,7 @@
     "google-auth-library": "^9.15.1",
     "helmet": "8.0.0",
     "jsonwebtoken": "9.0.2",
+    "lucide-react": "^1.26.0",
     "morgan": "1.10.0",
     "prisma": "5.22.0",
     "swagger-jsdoc": "^6.2.8",

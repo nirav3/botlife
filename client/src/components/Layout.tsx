@@ -1,22 +1,26 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Home, ClipboardList, Dumbbell, Scale, Salad, TrendingUp, Sun, Moon, X, Menu } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { authApi } from '@/api/auth';
 import type { UnitSystem } from '@/types';
 import toast from 'react-hot-toast';
 
 const navItems = [
-  { to: '/',            label: 'Dashboard',   icon: '🏠' },
-  { to: '/plans',       label: 'Plans',        icon: '📋' },
-  { to: '/workouts',    label: 'Workouts',    icon: '🏋️' },
-  { to: '/weight',      label: 'Weight',      icon: '⚖️' },
-  { to: '/meals',       label: 'Meals',       icon: '🥗' },
-  { to: '/progression', label: 'Progression', icon: '📈' },
+  { to: '/',            label: 'Dashboard',   icon: Home },
+  { to: '/plans',       label: 'Plans',        icon: ClipboardList },
+  { to: '/workouts',    label: 'Workouts',    icon: Dumbbell },
+  { to: '/weight',      label: 'Weight',      icon: Scale },
+  { to: '/meals',       label: 'Meals',       icon: Salad },
+  { to: '/progression', label: 'Progression', icon: TrendingUp },
 ];
 
 export default function Layout() {
   const { user, logout, setUser } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -42,20 +46,22 @@ export default function Layout() {
       {/* Brand — extra top padding clears the notch/status bar on mobile,
           since this drawer is a fixed panel starting at the very top of
           the screen when open; no-op on lg+ (env resolves to 0 there too). */}
-      <div className="px-6 py-5 pt-[calc(1.25rem_+_env(safe-area-inset-top))] border-b border-gray-100 flex items-center justify-between">
-        <span className="text-xl font-bold text-brand-600">💪 BotLife</span>
+      <div className="px-6 py-5 pt-[calc(1.25rem_+_env(safe-area-inset-top))] border-b border-line flex items-center justify-between">
+        <span className="text-xl font-extrabold text-ink flex items-center gap-2">
+          <Logo className="w-6 h-6" /> BodLife
+        </span>
         <button
           onClick={() => setMobileNavOpen(false)}
-          className="lg:hidden text-gray-400 hover:text-gray-600 text-xl leading-none"
+          className="lg:hidden text-muted hover:text-ink"
           aria-label="Close menu"
         >
-          ✕
+          <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ to, label, icon }) => (
+        {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -64,30 +70,53 @@ export default function Layout() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-surface-2 text-accent-violet'
+                  : 'text-muted hover:bg-surface-2 hover:text-ink'
               }`
             }
           >
-            <span>{icon}</span>
+            <Icon className="w-[18px] h-[18px]" />
             {label}
           </NavLink>
         ))}
       </nav>
 
-      {/* Unit toggle + user */}
-      <div className="px-4 py-4 border-t border-gray-100 space-y-3">
+      {/* Theme + unit toggle + user */}
+      <div className="px-4 py-4 border-t border-line space-y-3">
+        {/* Light/dark pill toggle */}
+        <div>
+          <p className="text-xs text-muted mb-1.5">Theme</p>
+          <div className="flex rounded-lg border border-line overflow-hidden text-xs font-medium">
+            <button
+              onClick={() => theme === 'light' || toggleTheme()}
+              className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 transition-colors ${
+                theme === 'light' ? 'bg-btn-primary text-btn-primary-text' : 'text-muted hover:bg-surface-2'
+              }`}
+            >
+              <Sun className="w-3.5 h-3.5" /> Light
+            </button>
+            <button
+              onClick={() => theme === 'dark' || toggleTheme()}
+              className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 transition-colors ${
+                theme === 'dark' ? 'bg-btn-primary text-btn-primary-text' : 'text-muted hover:bg-surface-2'
+              }`}
+            >
+              <Moon className="w-3.5 h-3.5" /> Dark
+            </button>
+          </div>
+        </div>
+
         {/* Unit system pill toggle */}
         <div>
-          <p className="text-xs text-gray-400 mb-1.5">Units</p>
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+          <p className="text-xs text-muted mb-1.5">Units</p>
+          <div className="flex rounded-lg border border-line overflow-hidden text-xs font-medium">
             <button
               onClick={() => !isImperial || unitMutation.mutate('METRIC')}
               disabled={unitMutation.isPending}
               className={`flex-1 py-1.5 transition-colors ${
                 !isImperial
-                  ? 'bg-brand-600 text-white'
-                  : 'text-gray-500 hover:bg-gray-50'
+                  ? 'bg-btn-primary text-btn-primary-text'
+                  : 'text-muted hover:bg-surface-2'
               }`}
             >
               kg
@@ -97,8 +126,8 @@ export default function Layout() {
               disabled={unitMutation.isPending}
               className={`flex-1 py-1.5 transition-colors ${
                 isImperial
-                  ? 'bg-brand-600 text-white'
-                  : 'text-gray-500 hover:bg-gray-50'
+                  ? 'bg-btn-primary text-btn-primary-text'
+                  : 'text-muted hover:bg-surface-2'
               }`}
             >
               lb
@@ -107,10 +136,10 @@ export default function Layout() {
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+          <p className="text-xs text-muted truncate">{user?.email}</p>
           <button
             onClick={handleLogout}
-            className="mt-1 text-xs text-red-500 hover:text-red-700 transition-colors"
+            className="mt-1 text-xs text-danger hover:opacity-80 transition-opacity"
           >
             Sign out
           </button>
@@ -120,21 +149,23 @@ export default function Layout() {
   );
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="min-h-screen flex bg-canvas">
       {/* Mobile top bar — only below lg, where the sidebar becomes a drawer.
           pt-[env(...)] pads for the notch/status bar instead of a fixed
           height, so the bar grows on devices that need it and stays 56px
           (h-14) everywhere else. */}
-      <div className="lg:hidden fixed top-0 inset-x-0 z-30 bg-white border-b border-gray-200 pt-[env(safe-area-inset-top)]">
+      <div className="lg:hidden fixed top-0 inset-x-0 z-30 bg-surface border-b border-line pt-[env(safe-area-inset-top)]">
         <div className="flex items-center justify-between px-4 h-14">
           <button
             onClick={() => setMobileNavOpen(true)}
-            className="text-gray-600 text-xl leading-none"
+            className="text-ink"
             aria-label="Open menu"
           >
-            ☰
+            <Menu className="w-5 h-5" />
           </button>
-          <span className="font-bold text-brand-600">💪 BotLife</span>
+          <span className="font-extrabold text-ink flex items-center gap-1.5">
+            <Logo className="w-5 h-5" /> BodLife
+          </span>
           <span className="w-5" aria-hidden="true" />
         </div>
       </div>
@@ -150,7 +181,7 @@ export default function Layout() {
 
       {/* Sidebar — static column on lg+, slide-in drawer below it */}
       <aside
-        className={`w-56 bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-out lg:static lg:translate-x-0 lg:z-auto ${
+        className={`w-56 bg-surface border-r border-line flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-out lg:static lg:translate-x-0 lg:z-auto ${
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

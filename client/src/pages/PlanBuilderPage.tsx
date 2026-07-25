@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
+import { X } from 'lucide-react';
 import { plansApi } from '@/api/plans';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -217,10 +218,10 @@ export default function PlanBuilderPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div>
-        <button onClick={() => navigate('/plans')} className="text-sm text-gray-400 hover:text-gray-600 mb-1">
+        <button onClick={() => navigate('/plans')} className="text-sm text-muted hover:text-ink mb-1">
           ← Back to plans
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">{isEditing ? 'Edit Plan' : 'Create a Plan'}</h1>
+        <h1 className="text-2xl font-bold text-ink">{isEditing ? 'Edit Plan' : 'Create a Plan'}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -231,21 +232,21 @@ export default function PlanBuilderPage() {
             <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A short description of the program" />
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Difficulty</label>
+                <label className="text-sm font-medium text-ink">Difficulty</label>
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 bg-white"
+                  className="border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-accent-violet focus:ring-2 focus:ring-accent-violet/30 bg-surface text-ink"
                 >
                   {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-700">Goal</label>
+                <label className="text-sm font-medium text-ink">Goal</label>
                 <select
                   value={goal}
                   onChange={(e) => setGoal(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 bg-white"
+                  className="border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-accent-violet focus:ring-2 focus:ring-accent-violet/30 bg-surface text-ink"
                 >
                   {GOALS.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
@@ -270,33 +271,33 @@ export default function PlanBuilderPage() {
                     <Input label="Session name" value={day.sessionName} onChange={(e) => updateDay(dayIndex, { sessionName: e.target.value })} placeholder="Push Day" />
                   </div>
                   {days.length > 1 && (
-                    <button type="button" onClick={() => removeDay(dayIndex)} className="text-red-300 hover:text-red-500 text-sm mt-6" aria-label="Remove day">
-                      ✕
+                    <button type="button" onClick={() => removeDay(dayIndex)} className="text-danger/60 hover:text-danger mt-6" aria-label="Remove day">
+                      <X className="w-4 h-4" />
                     </button>
                   )}
                 </div>
               </CardHeader>
               <CardBody className="space-y-4">
                 {day.exercises.map((ex, exIndex) => (
-                  <div key={exIndex} className="border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50">
+                  <div key={exIndex} className="border border-line rounded-xl p-4 space-y-3 bg-surface-2">
                     <div className="flex items-start justify-between gap-3">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
                         <Input label="Exercise" value={ex.name} onChange={(e) => updateExercise(dayIndex, exIndex, { name: e.target.value })} placeholder="Bench Press" />
                         <Input label="Muscle group" value={ex.muscleGroup} onChange={(e) => updateExercise(dayIndex, exIndex, { muscleGroup: e.target.value })} placeholder="Chest" />
                       </div>
                       {day.exercises.length > 1 && (
-                        <button type="button" onClick={() => removeExercise(dayIndex, exIndex)} className="text-red-300 hover:text-red-500 text-sm mt-6" aria-label="Remove exercise">
-                          ✕
+                        <button type="button" onClick={() => removeExercise(dayIndex, exIndex)} className="text-danger/60 hover:text-danger mt-6" aria-label="Remove exercise">
+                          <X className="w-4 h-4" />
                         </button>
                       )}
                     </div>
                     <Input label="Notes (optional)" value={ex.notes} onChange={(e) => updateExercise(dayIndex, exIndex, { notes: e.target.value })} placeholder="Add weight when bodyweight is easy" />
 
                     <div className="space-y-2">
-                      <p className="text-xs text-gray-400 uppercase tracking-wide">Sets</p>
+                      <p className="text-xs text-muted uppercase tracking-wide">Sets</p>
                       {ex.sets.map((s, setIndex) => (
                         <div key={setIndex} className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400 w-6 shrink-0">{s.setNumber}</span>
+                          <span className="text-xs text-muted w-6 shrink-0">{s.setNumber}</span>
                           <div className="flex-1 min-w-0">
                             <Input
                               value={s.targetReps}
@@ -313,7 +314,7 @@ export default function PlanBuilderPage() {
                               placeholder="RPE"
                             />
                           </div>
-                          <label className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap shrink-0">
+                          <label className="flex items-center gap-1 text-xs text-muted whitespace-nowrap shrink-0">
                             <input
                               type="checkbox"
                               checked={s.isWarmup}
@@ -323,8 +324,8 @@ export default function PlanBuilderPage() {
                             Warmup
                           </label>
                           {ex.sets.length > 1 && (
-                            <button type="button" onClick={() => removeSet(dayIndex, exIndex, setIndex)} className="text-red-300 hover:text-red-500 text-xs shrink-0" aria-label="Remove set">
-                              ✕
+                            <button type="button" onClick={() => removeSet(dayIndex, exIndex, setIndex)} className="text-danger/60 hover:text-danger shrink-0" aria-label="Remove set">
+                              <X className="w-3.5 h-3.5" />
                             </button>
                           )}
                         </div>

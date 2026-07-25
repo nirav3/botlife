@@ -73,7 +73,7 @@ app.get('/health', (_req, res) => {
 
 // ─── Swagger UI ───────────────────────────────────────────────────────────────
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customSiteTitle: 'BotLife API Docs',
+  customSiteTitle: 'BodLife API Docs',
   swaggerOptions: {
     persistAuthorization: true,   // keeps the JWT between page refreshes
   },

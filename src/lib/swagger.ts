@@ -4,10 +4,10 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'BotLife API',
+      title: 'BodLife API',
       version: '1.0.0',
       description:
-        'REST API for the BotLife lifestyle tracking app — gym workouts, progressive overload, weight tracking, and meal plans.',
+        'REST API for the BodLife lifestyle tracking app — gym workouts, progressive overload, weight tracking, and meal plans.',
     },
     servers: [
       { url: 'http://localhost:3000', description: 'Local development' },

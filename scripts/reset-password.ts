@@ -3,7 +3,7 @@
  *   npx ts-node scripts/reset-password.ts <email> <newPassword>
  *
  * Example:
- *   npx ts-node scripts/reset-password.ts demo@botlife.app newpassword123
+ *   npx ts-node scripts/reset-password.ts demo@bodlife.app newpassword123
  */
 
 import 'dotenv/config';

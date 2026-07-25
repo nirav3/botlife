@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -58,12 +59,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-green-100 px-4">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-8">
+    <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
+      <div className="bg-surface rounded-2xl shadow-lg w-full max-w-sm p-8">
         <div className="text-center mb-8">
-          <span className="text-4xl">💪</span>
-          <h1 className="text-2xl font-bold text-gray-900 mt-2">Create account</h1>
-          <p className="text-gray-500 text-sm mt-1">Start tracking your lifestyle</p>
+          <Logo className="w-10 h-10 mx-auto text-accent-violet" />
+          <h1 className="text-2xl font-extrabold text-ink mt-2">Create account</h1>
+          <p className="text-muted text-sm mt-1">Start tracking your lifestyle</p>
         </div>
 
         <div className="flex justify-center mb-6">
@@ -74,9 +75,9 @@ export default function RegisterPage() {
         </div>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-gray-400 uppercase tracking-wide">or</span>
-          <div className="flex-1 h-px bg-gray-200" />
+          <div className="flex-1 h-px bg-line" />
+          <span className="text-xs text-muted uppercase tracking-wide">or</span>
+          <div className="flex-1 h-px bg-line" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -107,16 +108,16 @@ export default function RegisterPage() {
           />
 
           {/* Security question section */}
-          <div className="pt-2 border-t border-gray-100">
-            <p className="text-xs text-gray-500 mb-3">
+          <div className="pt-2 border-t border-line">
+            <p className="text-xs text-muted mb-3">
               Set a security question to recover your account if you forget your password.
             </p>
             <div className="flex flex-col gap-1 mb-3">
-              <label className="text-sm font-medium text-gray-700">Security question</label>
+              <label className="text-sm font-medium text-ink">Security question</label>
               <select
                 value={securityQuestion}
                 onChange={(e) => setSecurityQuestion(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 bg-white"
+                className="border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-accent-violet focus:ring-2 focus:ring-accent-violet/30 bg-surface text-ink"
               >
                 {SECURITY_QUESTIONS.map((q) => (
                   <option key={q} value={q}>{q}</option>
@@ -138,9 +139,9 @@ export default function RegisterPage() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-muted mt-6">
           Already have an account?{' '}
-          <Link to="/login" className="text-brand-600 hover:underline font-medium">
+          <Link to="/login" className="text-accent-violet hover:underline font-medium">
             Sign in
           </Link>
         </p>

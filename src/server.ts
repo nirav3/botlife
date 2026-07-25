@@ -13,7 +13,7 @@ async function start() {
     const addr = server.address();
     const port = typeof addr === 'object' && addr ? addr.port : PORT;
 
-    console.log(`\n🚀 BotLife running on:`);
+    console.log(`\n🚀 BodLife running on:`);
     console.log(`   Local:    http://localhost:${port}`);
     console.log(`   Network:  http://192.168.68.67:${port}`);
     console.log(`   API docs: http://192.168.68.67:${port}/docs`);

@@ -1,6 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import { CheckCircle2 } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { authApi } from '@/api/auth';
 import { Button } from '@/components/ui/Button';
@@ -89,15 +91,15 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
                   step === s
-                    ? 'bg-brand-600 text-white'
+                    ? 'bg-btn-primary text-btn-primary-text'
                     : ['answer', 'newPassword'].indexOf(step) > ['answer', 'newPassword'].indexOf(s)
-                    ? 'bg-brand-100 text-brand-700'
-                    : 'bg-gray-100 text-gray-400'
+                    ? 'bg-surface-2 text-accent-violet'
+                    : 'bg-surface-2 text-muted'
                 }`}
               >
                 {i + 1}
               </div>
-              {i < 2 && <div className="flex-1 h-px bg-gray-200 w-8" />}
+              {i < 2 && <div className="flex-1 h-px bg-line w-8" />}
             </div>
           ))}
         </div>
@@ -106,7 +108,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
       {/* Step 1: Email */}
       {step === 'email' && (
         <form onSubmit={handleEmailSubmit} className="space-y-4">
-          <p className="text-sm text-gray-500">Enter your email and we'll retrieve your security question.</p>
+          <p className="text-sm text-muted">Enter your email and we'll retrieve your security question.</p>
           <Input
             label="Email"
             type="email"
@@ -126,9 +128,9 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
       {/* Step 2: Security answer */}
       {step === 'answer' && (
         <form onSubmit={handleAnswerSubmit} className="space-y-4">
-          <div className="bg-gray-50 rounded-lg px-4 py-3">
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Security question</p>
-            <p className="text-sm font-medium text-gray-800">{securityQuestion}</p>
+          <div className="bg-surface-2 rounded-lg px-4 py-3">
+            <p className="text-xs text-muted uppercase tracking-wide font-medium mb-1">Security question</p>
+            <p className="text-sm font-medium text-ink">{securityQuestion}</p>
           </div>
           <Input
             label="Your answer"
@@ -149,7 +151,7 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
       {/* Step 3: New password */}
       {step === 'newPassword' && (
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
-          <p className="text-sm text-gray-500">Almost there — set your new password. This link expires in 15 minutes.</p>
+          <p className="text-sm text-muted">Almost there — set your new password. This link expires in 15 minutes.</p>
           <Input
             label="New password"
             type="password"
@@ -177,9 +179,9 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
       {/* Done */}
       {step === 'done' && (
         <div className="text-center py-4 space-y-4">
-          <div className="text-5xl">✅</div>
-          <p className="font-semibold text-gray-900">Password reset!</p>
-          <p className="text-sm text-gray-500">You can now sign in with your new password.</p>
+          <CheckCircle2 className="w-12 h-12 mx-auto text-accent-lime" />
+          <p className="font-semibold text-ink">Password reset!</p>
+          <p className="text-sm text-muted">You can now sign in with your new password.</p>
           <Button onClick={onClose} className="w-full">Back to login</Button>
         </div>
       )}
@@ -227,12 +229,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-green-100 px-4">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-8">
+    <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
+      <div className="bg-surface rounded-2xl shadow-lg w-full max-w-sm p-8">
         <div className="text-center mb-8">
-          <span className="text-4xl">💪</span>
-          <h1 className="text-2xl font-bold text-gray-900 mt-2">BotLife</h1>
-          <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
+          <Logo className="w-10 h-10 mx-auto text-accent-violet" />
+          <h1 className="text-2xl font-extrabold text-ink mt-2">BodLife</h1>
+          <p className="text-muted text-sm mt-1">Sign in to your account</p>
         </div>
 
         <div className="flex justify-center mb-6">
@@ -243,9 +245,9 @@ export default function LoginPage() {
         </div>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-gray-400 uppercase tracking-wide">or</span>
-          <div className="flex-1 h-px bg-gray-200" />
+          <div className="flex-1 h-px bg-line" />
+          <span className="text-xs text-muted uppercase tracking-wide">or</span>
+          <div className="flex-1 h-px bg-line" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -271,7 +273,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowReset(true)}
-                className="text-xs text-brand-600 hover:underline"
+                className="text-xs text-accent-violet hover:underline"
               >
                 Forgot password?
               </button>
@@ -282,9 +284,9 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-muted mt-6">
           Don't have an account?{' '}
-          <Link to="/register" className="text-brand-600 hover:underline font-medium">
+          <Link to="/register" className="text-accent-violet hover:underline font-medium">
             Sign up
           </Link>
         </p>

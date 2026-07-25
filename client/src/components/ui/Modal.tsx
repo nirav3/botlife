@@ -26,15 +26,15 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       aria-labelledby="modal-title"
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
+        className="bg-surface rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 id="modal-title" className="text-lg font-semibold text-gray-900">{title}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
+          <h2 id="modal-title" className="text-lg font-semibold text-ink">{title}</h2>
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="text-gray-400 hover:text-gray-600 transition-colors text-xl leading-none"
+            className="text-muted hover:text-ink transition-colors text-xl leading-none"
           >
             ×
           </button>

@@ -1,6 +1,6 @@
-# BotLife API
+# BodLife API
 
-REST API for the BotLife lifestyle tracking app — gym workouts, progressive overload, weight tracking, and meal plans.
+REST API for the BodLife lifestyle tracking app — gym workouts, progressive overload, weight tracking, and meal plans.
 
 ## Stack
 

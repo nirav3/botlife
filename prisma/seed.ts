@@ -9,10 +9,10 @@ async function main() {
   // Create demo user
   const passwordHash = await bcrypt.hash('password123', 12);
   const user = await prisma.user.upsert({
-    where: { email: 'demo@botlife.app' },
+    where: { email: 'demo@bodlife.app' },
     update: {},
     create: {
-      email: 'demo@botlife.app',
+      email: 'demo@bodlife.app',
       passwordHash,
       name: 'Demo User',
     },
@@ -101,7 +101,7 @@ async function main() {
   });
 
   console.log('✅ Seeded meal plan');
-  console.log('\n🎉 Seed complete! Login with: demo@botlife.app / password123');
+  console.log('\n🎉 Seed complete! Login with: demo@bodlife.app / password123');
 }
 
 main()

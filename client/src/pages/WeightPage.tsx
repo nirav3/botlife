@@ -4,6 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { format } from 'date-fns';
+import { Scale, MapPin, Flag, BarChart3, TrendingUp, X } from 'lucide-react';
 import { weightApi } from '@/api/weight';
 import { useUnits } from '@/hooks/useUnits';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
@@ -90,25 +91,27 @@ export default function WeightPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">⚖️ Weight Tracker</h1>
+        <h1 className="text-2xl font-extrabold text-ink flex items-center gap-2">
+          <Scale className="w-6 h-6 text-accent-cyan" /> Weight Tracker
+        </h1>
         <Button onClick={() => setModalOpen(true)}>+ Log weight</Button>
       </div>
 
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Current" value={fmtStat(stats.current)} icon="📍" />
-          <StatCard label="Starting" value={fmtStat(stats.starting)} icon="🏁" />
+          <StatCard label="Current" value={fmtStat(stats.current)} icon={<MapPin />} valueColor="text-accent-cyan" />
+          <StatCard label="Starting" value={fmtStat(stats.starting)} icon={<Flag />} valueColor="text-accent-cyan" />
           <StatCard
             label="Total change"
             value={fmtChange(stats.totalChange)}
-            icon="📊"
+            icon={<BarChart3 />}
             trend={stats.totalChange < 0 ? 'down' : stats.totalChange > 0 ? 'up' : 'neutral'}
           />
           <StatCard
             label="Weekly trend"
             value={stats.weeklyTrend != null ? fmtChange(stats.weeklyTrend) : '—'}
-            icon="📈"
+            icon={<TrendingUp />}
             trend={
               stats.weeklyTrend == null ? 'neutral' :
               stats.weeklyTrend < 0 ? 'down' : stats.weeklyTrend > 0 ? 'up' : 'neutral'
@@ -121,18 +124,18 @@ export default function WeightPage() {
       {chartData.length > 1 && (
         <Card>
           <CardHeader>
-            <h2 className="font-semibold text-gray-800">
+            <h2 className="font-semibold text-ink">
               Weight over time ({units.weightUnit})
             </h2>
           </CardHeader>
           <CardBody>
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#8e8e93" strokeOpacity={0.25} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#8e8e93' }} />
                 <YAxis
                   domain={['auto', 'auto']}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 11, fill: '#8e8e93' }}
                   tickFormatter={(v: number) => `${v}${units.weightUnit}`}
                 />
                 <Tooltip
@@ -141,7 +144,7 @@ export default function WeightPage() {
                 <Line
                   type="monotone"
                   dataKey="weight"
-                  stroke="#16a34a"
+                  stroke="#2fb8c6"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4 }}
@@ -154,30 +157,30 @@ export default function WeightPage() {
 
       {/* History table */}
       <Card>
-        <CardHeader><h2 className="font-semibold text-gray-800">History</h2></CardHeader>
+        <CardHeader><h2 className="font-semibold text-ink">History</h2></CardHeader>
         <CardBody className="p-0">
           {history?.data.length === 0 && (
-            <p className="text-center text-gray-400 text-sm py-8">No entries yet</p>
+            <p className="text-center text-muted text-sm py-8">No entries yet</p>
           )}
           {history?.data.map((entry) => (
             <div
               key={entry.id}
-              className="flex items-center justify-between px-6 py-3 border-b last:border-b-0 border-gray-50"
+              className="flex items-center justify-between px-6 py-3 border-b last:border-b-0 border-line"
             >
               <div>
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-sm font-semibold text-ink">
                   {units.formatWeight(entry.weightKg)}
                 </p>
-                {entry.note && <p className="text-xs text-gray-400">{entry.note}</p>}
+                {entry.note && <p className="text-xs text-muted">{entry.note}</p>}
               </div>
               <div className="flex items-center gap-4">
-                <p className="text-xs text-gray-400">{format(new Date(entry.loggedAt), 'MMM d, yyyy')}</p>
+                <p className="text-xs text-muted">{format(new Date(entry.loggedAt), 'MMM d, yyyy')}</p>
                 <button
                   onClick={() => deleteMutation.mutate(entry.id)}
-                  className="text-red-400 hover:text-red-600 text-xs transition-colors"
+                  className="text-danger/60 hover:text-danger transition-colors"
                   aria-label="Delete entry"
                 >
-                  ✕
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>

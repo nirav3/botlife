@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { Salad, X } from 'lucide-react';
 import { mealsApi } from '@/api/meals';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -104,7 +105,9 @@ export default function MealsPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">🥗 Meals</h1>
+        <h1 className="text-2xl font-extrabold text-ink flex items-center gap-2">
+          <Salad className="w-6 h-6 text-accent-lime" /> Meals
+        </h1>
         <div className="flex gap-2">
           {activePlan && (
             <Button variant="secondary" onClick={() => setNewMealModal(true)}>+ Add meal</Button>
@@ -117,20 +120,20 @@ export default function MealsPage() {
       {summary && (
         <Card>
           <CardHeader>
-            <h2 className="font-semibold text-gray-800">Today — {format(new Date(), 'MMM d')}</h2>
+            <h2 className="font-semibold text-ink">Today — {format(new Date(), 'MMM d')}</h2>
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               {([
-                { label: 'Calories', value: Math.round(summary.totals.calories), target: summary.targets?.calories, unit: 'kcal' },
-                { label: 'Protein', value: Math.round(summary.totals.proteinG), target: summary.targets?.proteinG, unit: 'g' },
-                { label: 'Carbs', value: Math.round(summary.totals.carbsG), target: summary.targets?.carbsG, unit: 'g' },
-                { label: 'Fat', value: Math.round(summary.totals.fatG), target: summary.targets?.fatG, unit: 'g' },
-              ] as const).map(({ label, value, target, unit }) => (
-                <div key={label} className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 mb-1">{label}</p>
-                  <p className="text-xl font-bold text-gray-900">{value}<span className="text-xs font-normal text-gray-400 ml-0.5">{unit}</span></p>
-                  {target && <p className="text-xs text-gray-400 mt-0.5">/ {target}{unit}</p>}
+                { label: 'Calories', value: Math.round(summary.totals.calories), target: summary.targets?.calories, unit: 'kcal', color: 'text-accent-coral' },
+                { label: 'Protein', value: Math.round(summary.totals.proteinG), target: summary.targets?.proteinG, unit: 'g', color: 'text-accent-cyan' },
+                { label: 'Carbs', value: Math.round(summary.totals.carbsG), target: summary.targets?.carbsG, unit: 'g', color: 'text-accent-lime' },
+                { label: 'Fat', value: Math.round(summary.totals.fatG), target: summary.targets?.fatG, unit: 'g', color: 'text-accent-coral' },
+              ] as const).map(({ label, value, target, unit, color }) => (
+                <div key={label} className="bg-surface-2 rounded-lg p-3">
+                  <p className="text-xs text-muted mb-1">{label}</p>
+                  <p className={`text-xl font-extrabold ${color}`}>{value}<span className="text-xs font-normal text-muted ml-0.5">{unit}</span></p>
+                  {target && <p className="text-xs text-muted mt-0.5">/ {target}{unit}</p>}
                 </div>
               ))}
             </div>
@@ -142,8 +145,8 @@ export default function MealsPage() {
       {activePlan && <PlanView plan={activePlan} onAddFood={(mealId) => setAddFoodModal({ planId: activePlan.id, mealId })} onDeleteFood={(mealId, foodId) => deleteFoodMutation.mutate({ planId: activePlan.id, mealId, foodId })} />}
 
       {!plans?.length && (
-        <div className="text-center py-16 text-gray-400">
-          <p className="text-4xl mb-3">🥗</p>
+        <div className="text-center py-16 text-muted">
+          <Salad className="w-10 h-10 mx-auto mb-3" />
           <p className="font-medium">No meal plans yet</p>
           <p className="text-sm mt-1">Create a plan to start tracking nutrition</p>
         </div>
@@ -208,9 +211,9 @@ function PlanView({ plan, onAddFood, onDeleteFood }: {
 }) {
   return (
     <div className="space-y-4">
-      <h2 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">{plan.name}</h2>
+      <h2 className="font-semibold text-ink text-sm uppercase tracking-wide">{plan.name}</h2>
       {plan.meals.length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-6">No meals logged yet — add one above</p>
+        <p className="text-sm text-muted text-center py-6">No meals logged yet — add one above</p>
       )}
       {plan.meals.map((meal: Meal) => {
         const mealCal = meal.foodItems.reduce((a, f) => a + f.calories, 0);
@@ -220,8 +223,8 @@ function PlanView({ plan, onAddFood, onDeleteFood }: {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{meal.name}</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <h3 className="font-semibold text-ink">{meal.name}</h3>
+                  <p className="text-xs text-muted mt-0.5">
                     {Math.round(mealCal)} kcal · {Math.round(mealPro)}g protein
                   </p>
                 </div>
@@ -230,17 +233,17 @@ function PlanView({ plan, onAddFood, onDeleteFood }: {
             </CardHeader>
             <CardBody className="p-0">
               {meal.foodItems.length === 0 && (
-                <p className="text-xs text-gray-400 px-6 py-3">No food logged</p>
+                <p className="text-xs text-muted px-6 py-3">No food logged</p>
               )}
               {meal.foodItems.map((food) => (
-                <div key={food.id} className="flex items-center justify-between px-6 py-2.5 border-b last:border-b-0 border-gray-50">
+                <div key={food.id} className="flex items-center justify-between px-6 py-2.5 border-b last:border-b-0 border-line">
                   <div>
-                    <p className="text-sm font-medium text-gray-800">{food.name}</p>
-                    <p className="text-xs text-gray-400">{food.quantity}{food.unit} · P:{food.proteinG}g C:{food.carbsG}g F:{food.fatG}g</p>
+                    <p className="text-sm font-medium text-ink">{food.name}</p>
+                    <p className="text-xs text-muted">{food.quantity}{food.unit} · P:{food.proteinG}g C:{food.carbsG}g F:{food.fatG}g</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-4">
-                    <span className="text-sm font-semibold text-gray-700">{Math.round(food.calories)} kcal</span>
-                    <button onClick={() => onDeleteFood(meal.id, food.id)} className="text-red-300 hover:text-red-500 text-xs transition-colors" aria-label="Delete food">✕</button>
+                    <span className="text-sm font-semibold text-ink">{Math.round(food.calories)} kcal</span>
+                    <button onClick={() => onDeleteFood(meal.id, food.id)} className="text-danger/50 hover:text-danger transition-colors" aria-label="Delete food"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
               ))}

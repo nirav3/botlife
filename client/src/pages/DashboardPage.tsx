@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { Scale, Dumbbell, TrendingUp, Rocket } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnits } from '@/hooks/useUnits';
 import { weightApi } from '@/api/weight';
@@ -7,6 +8,7 @@ import { workoutsApi } from '@/api/workouts';
 import { mealsApi } from '@/api/meals';
 import { progressionApi } from '@/api/progression';
 import { StatCard } from '@/components/ui/StatCard';
+import { ProgressRing } from '@/components/ui/ProgressRing';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { format } from 'date-fns';
 
@@ -36,47 +38,51 @@ export default function DashboardPage() {
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-extrabold text-ink">
           Good {getTimeOfDay()}, {user?.name?.split(' ')[0]} 👋
         </h1>
-        <p className="text-gray-500 text-sm mt-1">{format(new Date(), 'EEEE, MMMM d')}</p>
+        <p className="text-muted text-sm mt-1">{format(new Date(), 'EEEE, MMMM d')}</p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard
-          icon="⚖️"
-          label="Current weight"
-          value={fmtWeight(weightStats?.current)}
-          sub={fmtTrend(weightStats?.weeklyTrend)}
-          trend={
-            weightStats?.weeklyTrend == null ? 'neutral' :
-            weightStats.weeklyTrend < 0 ? 'down' :
-            weightStats.weeklyTrend > 0 ? 'up' : 'neutral'
-          }
-        />
-        <StatCard
-          icon="🔥"
-          label="Calories today"
-          value={dailySummary ? Math.round(dailySummary.totals.calories) : '—'}
-          sub={
-            dailySummary?.targets?.calories
-              ? `goal: ${dailySummary.targets.calories} kcal`
-              : undefined
-          }
-        />
-        <StatCard
-          icon="🏋️"
-          label="Total sessions"
-          value={sessions?.pagination.total ?? '—'}
-        />
-        <StatCard
-          icon="📈"
-          label="Ready to progress"
-          value={readyCount}
-          sub={readyCount > 0 ? 'exercises ready for increase' : 'keep going!'}
-          trend={readyCount > 0 ? 'up' : 'neutral'}
-        />
+      {/* Hero row: energy ring + the other 3 metrics, each with its own color */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="sm:w-44 shrink-0">
+          <ProgressRing
+            value={dailySummary?.totals.calories ?? 0}
+            max={dailySummary?.targets?.calories ?? 2000}
+            label="Energy today"
+            unit="kcal"
+            color="#ff7a45"
+          />
+        </div>
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            icon={<Scale />}
+            label="Current weight"
+            value={fmtWeight(weightStats?.current)}
+            sub={fmtTrend(weightStats?.weeklyTrend)}
+            trend={
+              weightStats?.weeklyTrend == null ? 'neutral' :
+              weightStats.weeklyTrend < 0 ? 'down' :
+              weightStats.weeklyTrend > 0 ? 'up' : 'neutral'
+            }
+            valueColor="text-accent-cyan"
+          />
+          <StatCard
+            icon={<Dumbbell />}
+            label="Total sessions"
+            value={sessions?.pagination.total ?? '—'}
+            valueColor="text-accent-lime"
+          />
+          <StatCard
+            icon={<TrendingUp />}
+            label="Ready to progress"
+            value={readyCount}
+            sub={readyCount > 0 ? 'exercises ready for increase' : 'keep going!'}
+            trend={readyCount > 0 ? 'up' : 'neutral'}
+            valueColor="text-accent-violet"
+          />
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -84,25 +90,25 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-gray-800">Recent workouts</h2>
-              <Link to="/workouts" className="text-xs text-brand-600 hover:underline">View all</Link>
+              <h2 className="font-semibold text-ink">Recent workouts</h2>
+              <Link to="/workouts" className="text-xs text-accent-violet hover:underline">View all</Link>
             </div>
           </CardHeader>
           <CardBody className="p-0">
             {sessions?.data.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-6">No workouts yet</p>
+              <p className="text-sm text-muted text-center py-6">No workouts yet</p>
             )}
             {sessions?.data.map((s) => (
               <Link
                 key={s.id}
                 to={`/workouts/${s.id}`}
-                className="flex items-center justify-between px-6 py-3 border-b last:border-b-0 border-gray-50 hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between px-6 py-3 border-b last:border-b-0 border-line hover:bg-surface-2 transition-colors"
               >
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{s.name}</p>
-                  <p className="text-xs text-gray-400">{format(new Date(s.startedAt), 'MMM d, yyyy')}</p>
+                  <p className="text-sm font-medium text-ink">{s.name}</p>
+                  <p className="text-xs text-muted">{format(new Date(s.startedAt), 'MMM d, yyyy')}</p>
                 </div>
-                <span className="text-xs text-gray-400">{s.exerciseLogs.length} exercises</span>
+                <span className="text-xs text-muted">{s.exerciseLogs.length} exercises</span>
               </Link>
             ))}
           </CardBody>
@@ -112,8 +118,8 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-gray-800">Today's nutrition</h2>
-              <Link to="/meals" className="text-xs text-brand-600 hover:underline">Log food</Link>
+              <h2 className="font-semibold text-ink">Today's nutrition</h2>
+              <Link to="/meals" className="text-xs text-accent-violet hover:underline">Log food</Link>
             </div>
           </CardHeader>
           <CardBody className="space-y-3">
@@ -124,25 +130,25 @@ export default function DashboardPage() {
                   value={dailySummary.totals.proteinG}
                   target={dailySummary.targets?.proteinG ?? null}
                   unit="g"
-                  color="bg-blue-400"
+                  color="bg-accent-cyan"
                 />
                 <MacroBar
                   label="Carbs"
                   value={dailySummary.totals.carbsG}
                   target={dailySummary.targets?.carbsG ?? null}
                   unit="g"
-                  color="bg-yellow-400"
+                  color="bg-accent-lime"
                 />
                 <MacroBar
                   label="Fat"
                   value={dailySummary.totals.fatG}
                   target={dailySummary.targets?.fatG ?? null}
                   unit="g"
-                  color="bg-orange-400"
+                  color="bg-accent-coral"
                 />
               </>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-4">No meals logged today</p>
+              <p className="text-sm text-muted text-center py-4">No meals logged today</p>
             )}
           </CardBody>
         </Card>
@@ -152,18 +158,20 @@ export default function DashboardPage() {
       {readyCount > 0 && (
         <Card>
           <CardHeader>
-            <h2 className="font-semibold text-gray-800">🚀 Ready to progress</h2>
+            <h2 className="font-semibold text-ink flex items-center gap-2">
+              <Rocket className="w-4 h-4 text-accent-violet" /> Ready to progress
+            </h2>
           </CardHeader>
           <CardBody className="p-0">
             {progression?.ready.map((s) => (
-              <div key={s.exerciseName} className="flex items-center justify-between px-6 py-3 border-b last:border-b-0 border-gray-50">
+              <div key={s.exerciseName} className="flex items-center justify-between px-6 py-3 border-b last:border-b-0 border-line">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{s.exerciseName}</p>
-                  <p className="text-xs text-gray-500">{s.reason.replace(/(\d+(?:\.\d+)?)\s*kg/g, (_m: string, v: string) => `${units.kgToDisplay(parseFloat(v)).toFixed(units.isImperial ? 0 : 1)} ${units.weightUnit}`)}</p>
+                  <p className="text-sm font-semibold text-ink">{s.exerciseName}</p>
+                  <p className="text-xs text-muted">{s.reason.replace(/(\d+(?:\.\d+)?)\s*kg/g, (_m: string, v: string) => `${units.kgToDisplay(parseFloat(v)).toFixed(units.isImperial ? 0 : 1)} ${units.weightUnit}`)}</p>
                 </div>
                 <div className="text-right shrink-0 ml-4">
-                  <p className="text-xs text-gray-400 line-through">{units.formatWeight(s.currentWeightKg)}</p>
-                  <p className="text-sm font-bold text-brand-600">{units.formatWeight(s.suggestedWeightKg)}</p>
+                  <p className="text-xs text-muted line-through">{units.formatWeight(s.currentWeightKg)}</p>
+                  <p className="text-sm font-bold text-accent-violet">{units.formatWeight(s.suggestedWeightKg)}</p>
                 </div>
               </div>
             ))}
@@ -180,12 +188,12 @@ function MacroBar({ label, value, target, unit, color }: {
   const pct = target ? Math.min(100, (value / target) * 100) : 0;
   return (
     <div>
-      <div className="flex justify-between text-xs text-gray-600 mb-1">
+      <div className="flex justify-between text-xs text-muted mb-1">
         <span>{label}</span>
         <span>{Math.round(value)}{unit}{target ? ` / ${target}${unit}` : ''}</span>
       </div>
       {target && (
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
           <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
         </div>
       )}

@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
+import { Dumbbell, X } from 'lucide-react';
 import { workoutsApi } from '@/api/workouts';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -50,15 +51,17 @@ export default function WorkoutsPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">🏋️ Workouts</h1>
+        <h1 className="text-2xl font-extrabold text-ink flex items-center gap-2">
+          <Dumbbell className="w-6 h-6 text-accent-violet" /> Workouts
+        </h1>
         <Button onClick={() => setModalOpen(true)}>+ New session</Button>
       </div>
 
-      {isLoading && <p className="text-gray-400 text-sm">Loading...</p>}
+      {isLoading && <p className="text-muted text-sm">Loading...</p>}
 
       {data?.data.length === 0 && (
-        <div className="text-center py-16 text-gray-400">
-          <p className="text-4xl mb-3">🏋️</p>
+        <div className="text-center py-16 text-muted">
+          <Dumbbell className="w-10 h-10 mx-auto mb-3" />
           <p className="font-medium">No workout sessions yet</p>
           <p className="text-sm mt-1">Create your first session to get started</p>
         </div>
@@ -76,10 +79,10 @@ export default function WorkoutsPage() {
             <Card key={session.id}>
               <CardBody className="flex items-center justify-between">
                 <Link to={`/workouts/${session.id}`} className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 hover:text-brand-600 transition-colors">
+                  <p className="font-semibold text-ink hover:text-accent-violet transition-colors">
                     {session.name}
                   </p>
-                  <div className="flex gap-4 mt-1 text-xs text-gray-400">
+                  <div className="flex gap-4 mt-1 text-xs text-muted">
                     <span>{format(new Date(session.startedAt), 'MMM d, yyyy · h:mm a')}</span>
                     <span>{session.exerciseLogs.length} exercises</span>
                     <span>{totalSets} sets</span>
@@ -88,10 +91,10 @@ export default function WorkoutsPage() {
                 </Link>
                 <button
                   onClick={() => deleteMutation.mutate(session.id)}
-                  className="text-red-400 hover:text-red-600 text-xs ml-4 transition-colors shrink-0"
+                  className="text-danger/70 hover:text-danger ml-4 transition-colors shrink-0"
                   aria-label="Delete session"
                 >
-                  ✕
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </CardBody>
             </Card>

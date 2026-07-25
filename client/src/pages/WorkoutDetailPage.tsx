@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import axios from 'axios';
+import { Pencil, Rocket, Shuffle, Lightbulb, X } from 'lucide-react';
 import { workoutsApi } from '@/api/workouts';
 import { progressionApi } from '@/api/progression';
 import { useUnits } from '@/hooks/useUnits';
@@ -62,7 +63,7 @@ function EditableCell({ value, placeholder, inputType = 'number', step = 'any', 
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={handleKey}
-        className={`w-full rounded border border-brand-400 bg-white px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-brand-300 ${className}`}
+        className={`w-full rounded border border-accent-violet bg-surface text-ink px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-accent-violet/40 ${className}`}
       />
     );
   }
@@ -71,12 +72,12 @@ function EditableCell({ value, placeholder, inputType = 'number', step = 'any', 
     <button
       onClick={() => { setDraft(value); setEditing(true); }}
       title="Click to edit"
-      className={`w-full text-left rounded px-2 py-1 text-sm transition-colors hover:bg-brand-50 hover:text-brand-700 group ${
-        value ? 'text-gray-900 font-medium' : 'text-gray-300 italic'
+      className={`w-full text-left rounded px-2 py-1 text-sm transition-colors hover:bg-surface-2 hover:text-accent-violet group ${
+        value ? 'text-ink font-medium' : 'text-muted italic'
       } ${className}`}
     >
       {value || placeholder}
-      <span className="ml-1 opacity-0 group-hover:opacity-60 text-brand-400 text-xs">✏</span>
+      <Pencil className="inline w-3 h-3 ml-1 opacity-0 group-hover:opacity-60 text-accent-violet" />
     </button>
   );
 }
@@ -96,14 +97,14 @@ function ProgressionBadge({
 
   if (suggestion.readyForProgression) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs bg-brand-50 text-brand-700 border border-brand-200 px-2 py-0.5 rounded-full font-medium">
-        🚀 Try {suggested.toFixed(decimals)} {units.weightUnit} today
+      <span className="inline-flex items-center gap-1 text-xs bg-surface-2 text-accent-violet border border-line px-2 py-0.5 rounded-full font-medium">
+        <Rocket className="w-3 h-3" /> Try {suggested.toFixed(decimals)} {units.weightUnit} today
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1 text-xs bg-gray-50 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full">
+    <span className="inline-flex items-center gap-1 text-xs bg-surface-2 text-muted border border-line px-2 py-0.5 rounded-full">
       Last: {units.formatWeight(suggestion.currentWeightKg)} × {suggestion.currentReps} reps
     </span>
   );
@@ -229,8 +230,8 @@ function ExerciseCard({
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <h2 className="font-semibold text-gray-900">{log.exerciseName}</h2>
-            {log.muscleGroup && <p className="text-xs text-gray-400">{log.muscleGroup}</p>}
+            <h2 className="font-semibold text-ink">{log.exerciseName}</h2>
+            {log.muscleGroup && <p className="text-xs text-muted">{log.muscleGroup}</p>}
             <ProgressionBadge suggestion={suggestion} units={units} />
           </div>
           <div className="flex gap-2 shrink-0">
@@ -242,7 +243,7 @@ function ExerciseCard({
                 onClick={() => swapMutation.mutate()}
                 title="Swap for a random alternative in the same muscle group"
               >
-                🎲 Swap
+                <Shuffle className="w-3.5 h-3.5" /> Swap
               </Button>
             )}
             <Button size="sm" variant="ghost" onClick={() => setAddSetModal(true)}>
@@ -251,7 +252,7 @@ function ExerciseCard({
           </div>
         </div>
         {log.notes && (
-          <p className="mt-2 text-xs text-gray-400 italic">{log.notes}</p>
+          <p className="mt-2 text-xs text-muted italic">{log.notes}</p>
         )}
       </CardHeader>
 
@@ -261,24 +262,24 @@ function ExerciseCard({
         <div className="overflow-x-auto">
         <div className={hasTargets ? 'min-w-[560px]' : 'min-w-[480px]'}>
         {/* Table header */}
-        <div className={`grid text-xs text-gray-400 uppercase tracking-wide px-4 py-2 bg-gray-50 border-b border-gray-100 ${hasTargets ? 'grid-cols-6' : 'grid-cols-5'}`}>
+        <div className={`grid text-xs text-muted uppercase tracking-wide px-4 py-2 bg-surface-2 border-b border-line ${hasTargets ? 'grid-cols-6' : 'grid-cols-5'}`}>
           <span className="pl-2">Set</span>
           <span>
             Weight ({units.weightUnit})
             {suggestedDisplay && (
-              <span className="ml-1 normal-case text-brand-500 font-normal not-italic">
+              <span className="ml-1 normal-case text-accent-violet font-normal not-italic">
                 · suggested {suggestedDisplay}
               </span>
             )}
           </span>
           <span>Reps</span>
-          {hasTargets && <span className="text-brand-500 normal-case font-normal">Plan target</span>}
+          {hasTargets && <span className="text-accent-violet normal-case font-normal">Plan target</span>}
           <span>RPE</span>
           <span></span>
         </div>
 
         {setsWithTargets.length === 0 && (
-          <p className="text-xs text-gray-400 px-6 py-4">No sets yet — click + Set to add one</p>
+          <p className="text-xs text-muted px-6 py-4">No sets yet — click + Set to add one</p>
         )}
 
         {setsWithTargets.map((set) => {
@@ -301,10 +302,10 @@ function ExerciseCard({
           return (
             <div
               key={set.id}
-              className={`grid items-center px-4 py-1.5 border-b last:border-b-0 border-gray-50 ${set.isWarmup ? 'bg-yellow-50' : ''} ${hasTargets ? 'grid-cols-6' : 'grid-cols-5'}`}
+              className={`grid items-center px-4 py-1.5 border-b last:border-b-0 border-line ${set.isWarmup ? 'bg-accent-coral/10' : ''} ${hasTargets ? 'grid-cols-6' : 'grid-cols-5'}`}
             >
               {/* Set number */}
-              <span className="pl-2 text-sm text-gray-500 font-medium">
+              <span className="pl-2 text-sm text-muted font-medium">
                 {set.isWarmup ? 'W' : set.setNumber}
               </span>
 
@@ -326,23 +327,23 @@ function ExerciseCard({
 
               {/* Plan target reps (read-only hint) */}
               {hasTargets && (
-                <span className="text-xs text-brand-600 font-medium px-2">
+                <span className="text-xs text-accent-violet font-medium px-2">
                   {set.targetReps ?? '—'}
                 </span>
               )}
 
               {/* RPE (read-only for now) */}
-              <span className="text-sm text-gray-400 px-2">
+              <span className="text-sm text-muted px-2">
                 {set.rpe != null ? set.rpe : '—'}
               </span>
 
               {/* Delete */}
               <button
                 onClick={() => deleteSetMutation.mutate(set.id)}
-                className="text-red-300 hover:text-red-500 text-xs transition-colors justify-self-end pr-2"
+                className="text-danger/50 hover:text-danger transition-colors justify-self-end pr-2"
                 aria-label="Delete set"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           );
@@ -356,12 +357,13 @@ function ExerciseCard({
         <form onSubmit={(e: FormEvent) => { e.preventDefault(); addSetMutation.mutate(); }} className="space-y-4">
           {/* Show suggestion as a prompt */}
           {suggestion?.readyForProgression && (
-            <div className="bg-brand-50 border border-brand-200 rounded-lg px-4 py-3 text-sm text-brand-700">
-              🚀 <strong>Suggested:</strong> {units.formatWeight(units.roundSuggestedWeightKg(suggestion.suggestedWeightKg))} — you've earned this increase!
+            <div className="bg-surface-2 border border-line rounded-lg px-4 py-3 text-sm text-accent-violet flex items-start gap-2">
+              <Rocket className="w-4 h-4 shrink-0 mt-0.5" />
+              <span><strong>Suggested:</strong> {units.formatWeight(units.roundSuggestedWeightKg(suggestion.suggestedWeightKg))} — you've earned this increase!</span>
             </div>
           )}
           {suggestion && !suggestion.readyForProgression && suggestion.currentWeightKg > 0 && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-600">
+            <div className="bg-surface-2 border border-line rounded-lg px-4 py-3 text-sm text-muted">
               Last time: {units.formatWeight(suggestion.currentWeightKg)} × {suggestion.currentReps} reps avg
             </div>
           )}
@@ -396,7 +398,7 @@ function ExerciseCard({
             onChange={(e) => setSetRpe(e.target.value)}
             placeholder="8"
           />
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
             <input type="checkbox" checked={isWarmup} onChange={(e) => setIsWarmup(e.target.checked)} className="rounded" />
             Warmup set
           </label>
@@ -456,25 +458,25 @@ export default function WorkoutDetailPage() {
     onSuccess: () => { navigate('/workouts'); toast.success('Session deleted'); },
   });
 
-  if (isLoading) return <div className="p-6 text-gray-400">Loading...</div>;
-  if (!session) return <div className="p-6 text-gray-400">Session not found</div>;
+  if (isLoading) return <div className="p-6 text-muted">Loading...</div>;
+  if (!session) return <div className="p-6 text-muted">Session not found</div>;
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <button onClick={() => navigate('/workouts')} className="text-sm text-gray-400 hover:text-gray-600 mb-1">
+          <button onClick={() => navigate('/workouts')} className="text-sm text-muted hover:text-ink mb-1">
             ← Back
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">{session.name}</h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <h1 className="text-2xl font-extrabold text-ink">{session.name}</h1>
+          <p className="text-sm text-muted mt-1">
             {format(new Date(session.startedAt), 'EEEE, MMM d · h:mm a')}
             {session.endedAt && ` – ${format(new Date(session.endedAt), 'h:mm a')}`}
           </p>
           {!session.endedAt && (
-            <p className="text-xs text-brand-600 mt-1">
-              💡 Click any weight or reps cell to edit it inline
+            <p className="text-xs text-accent-violet mt-1 flex items-center gap-1">
+              <Lightbulb className="w-3.5 h-3.5" /> Click any weight or reps cell to edit it inline
             </p>
           )}
         </div>

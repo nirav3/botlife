@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Calendar, Timer, Play, ClipboardList, Search } from 'lucide-react';
 import { plansApi } from '@/api/plans';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
@@ -10,16 +11,16 @@ import toast from 'react-hot-toast';
 
 // ─── Difficulty / goal badge colours ─────────────────────────────────────────
 const difficultyColour: Record<string, string> = {
-  Beginner:     'bg-green-100 text-green-700',
-  Intermediate: 'bg-yellow-100 text-yellow-700',
-  Advanced:     'bg-red-100 text-red-700',
+  Beginner:     'bg-accent-lime/15 text-accent-lime',
+  Intermediate: 'bg-accent-cyan/15 text-accent-cyan',
+  Advanced:     'bg-accent-coral/15 text-accent-coral',
 };
 
 const goalColour: Record<string, string> = {
-  Strength:        'bg-blue-100 text-blue-700',
-  Hypertrophy:     'bg-purple-100 text-purple-700',
-  'Fat Loss':      'bg-orange-100 text-orange-700',
-  'General Fitness': 'bg-gray-100 text-gray-600',
+  Strength:        'bg-accent-violet/15 text-accent-violet',
+  Hypertrophy:     'bg-accent-cyan/15 text-accent-cyan',
+  'Fat Loss':      'bg-accent-coral/15 text-accent-coral',
+  'General Fitness': 'bg-surface-2 text-muted',
 };
 
 // ─── Plan catalog card ────────────────────────────────────────────────────────
@@ -28,10 +29,10 @@ function PlanCard({ plan, onSelect }: { plan: WorkoutPlanSummary; onSelect: () =
     <Card className="hover:shadow-md transition-shadow cursor-pointer" >
       <CardBody className="space-y-3">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-bold text-gray-900 text-lg leading-tight">{plan.name}</h2>
+          <h2 className="font-bold text-ink text-lg leading-tight">{plan.name}</h2>
           <div className="flex flex-col gap-1 items-end shrink-0">
             {plan.ownerId && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-100 text-brand-700">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-accent-violet/15 text-accent-violet">
                 Mine
               </span>
             )}
@@ -44,18 +45,18 @@ function PlanCard({ plan, onSelect }: { plan: WorkoutPlanSummary; onSelect: () =
           </div>
         </div>
 
-        <p className="text-sm text-gray-500 leading-relaxed">{plan.description}</p>
+        <p className="text-sm text-muted leading-relaxed">{plan.description}</p>
 
         <div className="flex flex-wrap gap-1.5">
           {plan.tags.map((t) => (
-            <span key={t} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">{t}</span>
+            <span key={t} className="text-xs bg-surface-2 text-muted px-2 py-0.5 rounded-md">{t}</span>
           ))}
         </div>
 
         <div className="flex items-center justify-between pt-1">
-          <div className="flex gap-4 text-xs text-gray-400">
-            <span>📅 {plan.daysPerWeek}×/week</span>
-            <span>⏱ ~{plan.estimatedMinutes} min</span>
+          <div className="flex gap-4 text-xs text-muted">
+            <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {plan.daysPerWeek}×/week</span>
+            <span className="flex items-center gap-1"><Timer className="w-3.5 h-3.5" /> ~{plan.estimatedMinutes} min</span>
           </div>
           <Button size="sm" onClick={onSelect}>View plan</Button>
         </div>
@@ -100,7 +101,7 @@ function PlanDetail({ planId, onClose }: { planId: string; onClose: () => void }
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-violet" />
       </div>
     );
   }
@@ -112,14 +113,14 @@ function PlanDetail({ planId, onClose }: { planId: string; onClose: () => void }
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <button onClick={onClose} className="text-sm text-gray-400 hover:text-gray-600 mb-1">
+          <button onClick={onClose} className="text-sm text-muted hover:text-ink mb-1">
             ← Back to plans
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">{plan.name}</h1>
-          <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
-          <div className="flex gap-3 mt-2 text-xs text-gray-400">
-            <span>📅 {plan.daysPerWeek}×/week</span>
-            <span>⏱ ~{plan.estimatedMinutes} min/session</span>
+          <h1 className="text-2xl font-extrabold text-ink">{plan.name}</h1>
+          <p className="text-sm text-muted mt-1">{plan.description}</p>
+          <div className="flex gap-3 mt-2 text-xs text-muted items-center">
+            <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {plan.daysPerWeek}×/week</span>
+            <span className="flex items-center gap-1"><Timer className="w-3.5 h-3.5" /> ~{plan.estimatedMinutes} min/session</span>
             <span className={`font-medium px-2 py-0.5 rounded-full ${difficultyColour[plan.difficulty]}`}>{plan.difficulty}</span>
             <span className={`font-medium px-2 py-0.5 rounded-full ${goalColour[plan.goal]}`}>{plan.goal}</span>
           </div>
@@ -143,7 +144,7 @@ function PlanDetail({ planId, onClose }: { planId: string; onClose: () => void }
 
       {/* Day selector */}
       <div>
-        <h2 className="font-semibold text-gray-700 mb-3">Weekly schedule</h2>
+        <h2 className="font-semibold text-ink mb-3">Weekly schedule</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {plan.days.map((day) => (
             <button
@@ -151,12 +152,12 @@ function PlanDetail({ planId, onClose }: { planId: string; onClose: () => void }
               onClick={() => setSelectedDay(selectedDay?.dayNumber === day.dayNumber ? null : day)}
               className={`text-left p-3 rounded-xl border transition-all ${
                 selectedDay?.dayNumber === day.dayNumber
-                  ? 'border-brand-400 bg-brand-50 ring-1 ring-brand-300'
-                  : 'border-gray-200 bg-white hover:border-brand-200 hover:bg-gray-50'
+                  ? 'border-accent-violet bg-surface-2 ring-1 ring-accent-violet/40'
+                  : 'border-line bg-surface hover:border-accent-violet/40 hover:bg-surface-2'
               }`}
             >
-              <p className="font-semibold text-sm text-gray-900">{day.label}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{day.exercises.length} exercises</p>
+              <p className="font-semibold text-sm text-ink">{day.label}</p>
+              <p className="text-xs text-muted mt-0.5">{day.exercises.length} exercises</p>
             </button>
           ))}
         </div>
@@ -166,13 +167,13 @@ function PlanDetail({ planId, onClose }: { planId: string; onClose: () => void }
       {selectedDay && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">{selectedDay.label}</h2>
+            <h2 className="font-semibold text-ink">{selectedDay.label}</h2>
             <Button
               onClick={() => startMutation.mutate(selectedDay.dayNumber)}
               loading={startMutation.isPending}
               size="sm"
             >
-              🏋️ Start this workout
+              <Play className="w-4 h-4" /> Start this workout
             </Button>
           </div>
 
@@ -181,18 +182,18 @@ function PlanDetail({ planId, onClose }: { planId: string; onClose: () => void }
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-gray-900">{ex.name}</p>
-                    <p className="text-xs text-gray-400">{ex.muscleGroup}</p>
+                    <p className="font-semibold text-ink">{ex.name}</p>
+                    <p className="text-xs text-muted">{ex.muscleGroup}</p>
                   </div>
                   {ex.notes && (
-                    <p className="text-xs text-brand-600 bg-brand-50 px-2 py-1 rounded-lg max-w-[200px] text-right">
+                    <p className="text-xs text-accent-violet bg-surface-2 px-2 py-1 rounded-lg max-w-[200px] text-right">
                       {ex.notes}
                     </p>
                   )}
                 </div>
               </CardHeader>
               <CardBody className="p-0">
-                <div className="grid grid-cols-3 text-xs text-gray-400 uppercase tracking-wide px-6 py-2 bg-gray-50 border-b border-gray-100">
+                <div className="grid grid-cols-3 text-xs text-muted uppercase tracking-wide px-6 py-2 bg-surface-2 border-b border-line">
                   <span>Set</span>
                   <span>Target reps</span>
                   <span>Type</span>
@@ -200,11 +201,11 @@ function PlanDetail({ planId, onClose }: { planId: string; onClose: () => void }
                 {ex.sets.map((s) => (
                   <div
                     key={s.setNumber}
-                    className={`grid grid-cols-3 px-6 py-2.5 text-sm border-b last:border-b-0 border-gray-50 ${s.isWarmup ? 'bg-yellow-50' : ''}`}
+                    className={`grid grid-cols-3 px-6 py-2.5 text-sm border-b last:border-b-0 border-line ${s.isWarmup ? 'bg-accent-coral/10' : ''}`}
                   >
-                    <span className="text-gray-500">{s.isWarmup ? 'W' : s.setNumber}</span>
-                    <span className="font-medium text-gray-800">{s.targetReps}</span>
-                    <span className="text-xs text-gray-400">{s.isWarmup ? 'Warmup' : 'Working'}</span>
+                    <span className="text-muted">{s.isWarmup ? 'W' : s.setNumber}</span>
+                    <span className="font-medium text-ink">{s.targetReps}</span>
+                    <span className="text-xs text-muted">{s.isWarmup ? 'Warmup' : 'Working'}</span>
                   </div>
                 ))}
               </CardBody>
@@ -217,7 +218,7 @@ function PlanDetail({ planId, onClose }: { planId: string; onClose: () => void }
             onClick={() => startMutation.mutate(selectedDay.dayNumber)}
             loading={startMutation.isPending}
           >
-            🏋️ Start {selectedDay.label}
+            <Play className="w-4 h-4" /> Start {selectedDay.label}
           </Button>
         </div>
       )}
@@ -259,8 +260,10 @@ export default function PlansPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">📋 Workout Plans</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-extrabold text-ink flex items-center gap-2">
+            <ClipboardList className="w-6 h-6 text-accent-violet" /> Workout Plans
+          </h1>
+          <p className="text-muted text-sm mt-1">
             Choose a program and start any day — exercises are pre-loaded, you just log your weights and reps.
           </p>
         </div>
@@ -272,15 +275,15 @@ export default function PlansPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 font-medium">Difficulty:</span>
+          <span className="text-xs text-muted font-medium">Difficulty:</span>
           {['All', 'Beginner', 'Intermediate', 'Advanced'].map((d) => (
             <button
               key={d}
               onClick={() => setFilterDifficulty(d)}
               className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                 filterDifficulty === d
-                  ? 'bg-brand-600 text-white border-brand-600'
-                  : 'border-gray-200 text-gray-500 hover:border-brand-300'
+                  ? 'bg-btn-primary text-btn-primary-text border-btn-primary'
+                  : 'border-line text-muted hover:border-accent-violet/40'
               }`}
             >
               {d}
@@ -288,15 +291,15 @@ export default function PlansPage() {
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 font-medium">Goal:</span>
+          <span className="text-xs text-muted font-medium">Goal:</span>
           {['All', 'Strength', 'Hypertrophy', 'Fat Loss', 'General Fitness'].map((g) => (
             <button
               key={g}
               onClick={() => setFilterGoal(g)}
               className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                 filterGoal === g
-                  ? 'bg-brand-600 text-white border-brand-600'
-                  : 'border-gray-200 text-gray-500 hover:border-brand-300'
+                  ? 'bg-btn-primary text-btn-primary-text border-btn-primary'
+                  : 'border-line text-muted hover:border-accent-violet/40'
               }`}
             >
               {g}
@@ -307,13 +310,13 @@ export default function PlansPage() {
 
       {isLoading && (
         <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-violet" />
         </div>
       )}
 
       {!isLoading && myPlans && myPlans.length > 0 && (
         <div className="space-y-3">
-          <h2 className="font-semibold text-gray-700">My Plans</h2>
+          <h2 className="font-semibold text-ink">My Plans</h2>
           <div className="grid md:grid-cols-2 gap-4">
             {myPlans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} onSelect={() => setSelectedPlanId(plan.id)} />
@@ -324,7 +327,7 @@ export default function PlansPage() {
 
       {!isLoading && (
         <div className="space-y-3">
-          <h2 className="font-semibold text-gray-700">Sample Plans</h2>
+          <h2 className="font-semibold text-ink">Sample Plans</h2>
           <div className="grid md:grid-cols-2 gap-4">
             {samplePlans?.map((plan) => (
               <PlanCard key={plan.id} plan={plan} onSelect={() => setSelectedPlanId(plan.id)} />
@@ -334,8 +337,8 @@ export default function PlansPage() {
       )}
 
       {!isLoading && myPlans?.length === 0 && samplePlans?.length === 0 && (
-        <div className="text-center py-12 text-gray-400">
-          <p className="text-3xl mb-2">🔍</p>
+        <div className="text-center py-12 text-muted">
+          <Search className="w-8 h-8 mx-auto mb-2" />
           <p>No plans match your filters</p>
         </div>
       )}

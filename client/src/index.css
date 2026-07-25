@@ -3,7 +3,37 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --canvas: 251 247 239;    /* #fbf7ef */
+    --surface: 255 253 250;   /* #fffdfa */
+    --surface-2: 243 236 220; /* #f3ecdc */
+    --ink: 24 19 13;          /* #18130d */
+    --muted: 96 87 71;        /* #605747 */
+    --line: 231 221 199;      /* #e7ddc7 */
+    --btn-primary: 90 83 71;      /* #5a5347 soft dark gray, not stark black */
+    --btn-primary-text: 250 246 238;
+    --accent-cyan: 14 116 144;    /* #0e7490 darkened for legibility on light surface */
+    --accent-coral: 194 65 12;    /* #c2410c */
+    --accent-lime: 77 124 15;     /* #4d7c0f */
+    --accent-violet: 109 40 217;  /* #6d28d9 */
+  }
+
+  .dark {
+    --canvas: 28 28 30;       /* #1c1c1e */
+    --surface: 44 44 46;      /* #2c2c2e */
+    --surface-2: 58 58 60;    /* #3a3a3c */
+    --ink: 242 242 242;       /* #f2f2f2 */
+    --muted: 155 155 157;     /* #9b9b9d */
+    --line: 72 72 74;         /* #48484a */
+    --btn-primary: 199 199 202;   /* #c7c7ca soft light gray, not stark white */
+    --btn-primary-text: 28 28 30;
+    --accent-cyan: 47 184 198;    /* #2fb8c6 */
+    --accent-coral: 255 122 69;   /* #ff7a45 */
+    --accent-lime: 111 194 62;    /* #6fc23e */
+    --accent-violet: 157 123 240; /* #9d7bf0 */
+  }
+
   body {
-    @apply text-gray-900 antialiased;
+    @apply bg-canvas text-ink antialiased;
   }
 }
