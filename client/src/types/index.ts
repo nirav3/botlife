@@ -67,46 +67,6 @@ export interface WorkoutSession {
   exerciseLogs: ExerciseLog[];
 }
 
-// ── Meals ─────────────────────────────────────────────────────────────────────
-export interface FoodItem {
-  id: string;
-  mealId: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-}
-
-export interface Meal {
-  id: string;
-  mealPlanId: string;
-  name: string;
-  loggedAt: string;
-  foodItems: FoodItem[];
-}
-
-export interface MealPlan {
-  id: string;
-  userId: string;
-  name: string;
-  targetCalories: number | null;
-  targetProteinG: number | null;
-  targetCarbsG: number | null;
-  targetFatG: number | null;
-  isActive: boolean;
-  meals: Meal[];
-}
-
-export interface DailySummary {
-  date: string;
-  meals: Meal[];
-  totals: { calories: number; proteinG: number; carbsG: number; fatG: number };
-  targets: { calories: number | null; proteinG: number | null; carbsG: number | null; fatG: number | null } | null;
-}
-
 // ── Progression ───────────────────────────────────────────────────────────────
 export interface ProgressionSuggestion {
   exerciseName: string;

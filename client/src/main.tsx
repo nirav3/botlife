@@ -15,7 +15,6 @@ import DashboardPage from '@/pages/DashboardPage';
 import WorkoutsPage from '@/pages/WorkoutsPage';
 import WorkoutDetailPage from '@/pages/WorkoutDetailPage';
 import WeightPage from '@/pages/WeightPage';
-import MealsPage from '@/pages/MealsPage';
 import ProgressionPage from '@/pages/ProgressionPage';
 import PlansPage from '@/pages/PlansPage';
 import PlanBuilderPage from '@/pages/PlanBuilderPage';
@@ -65,7 +64,6 @@ function App() {
             <Route path="workouts" element={<WorkoutsPage />} />
             <Route path="workouts/:id" element={<WorkoutDetailPage />} />
             <Route path="weight" element={<WeightPage />} />
-            <Route path="meals" element={<MealsPage />} />
             <Route path="progression" element={<ProgressionPage />} />
             <Route path="plans" element={<PlansPage />} />
             <Route path="plans/new" element={<PlanBuilderPage />} />

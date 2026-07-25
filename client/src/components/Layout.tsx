@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Home, ClipboardList, Dumbbell, Scale, Salad, TrendingUp, Sun, Moon, X, Menu } from 'lucide-react';
+import { Home, ClipboardList, Dumbbell, Scale, TrendingUp, Sun, Moon, X, Menu } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
@@ -14,7 +14,6 @@ const navItems = [
   { to: '/plans',       label: 'Plans',        icon: ClipboardList },
   { to: '/workouts',    label: 'Workouts',    icon: Dumbbell },
   { to: '/weight',      label: 'Weight',      icon: Scale },
-  { to: '/meals',       label: 'Meals',       icon: Salad },
   { to: '/progression', label: 'Progression', icon: TrendingUp },
 ];
 
