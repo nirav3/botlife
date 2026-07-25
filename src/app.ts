@@ -28,10 +28,14 @@ const app = express();
 
 // ─── Security ────────────────────────────────────────────────────────────────
 // Disable CSP on static assets — it blocks Vite's ES module scripts.
+// Relax COOP to allow-popups — the default 'same-origin' silently breaks
+// Google Identity Services' popup/iframe postMessage handshake, which is
+// why the Sign-in-with-Google button was rendering as an empty 0x0 iframe.
 // All other helmet protections (HSTS, X-Frame-Options, etc.) remain active.
 app.use(
   helmet({
     contentSecurityPolicy: false,
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
   })
 );
 app.use(cors());
