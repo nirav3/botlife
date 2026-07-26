@@ -6,6 +6,7 @@ import { plansApi } from '@/api/plans';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ImportPlanHelpModal } from '@/components/ImportPlanHelpModal';
 import { parsePlanFile } from '@/lib/planImport';
 import type { WorkoutPlanSummary, PlanDay } from '@/types';
 import toast from 'react-hot-toast';
@@ -234,6 +235,7 @@ export default function PlansPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [filterDifficulty, setFilterDifficulty] = useState<string>('All');
   const [filterGoal, setFilterGoal] = useState<string>('All');
+  const [showImportHelp, setShowImportHelp] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,7 +293,7 @@ export default function PlansPage() {
             className="hidden"
             onChange={handleImportFile}
           />
-          <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+          <Button size="sm" variant="secondary" onClick={() => setShowImportHelp(true)}>
             <Upload className="w-4 h-4" /> Import
           </Button>
           <Button size="sm" onClick={() => navigate('/plans/new')}>
@@ -299,6 +301,12 @@ export default function PlansPage() {
           </Button>
         </div>
       </div>
+
+      <ImportPlanHelpModal
+        open={showImportHelp}
+        onClose={() => setShowImportHelp(false)}
+        onChooseFile={() => fileInputRef.current?.click()}
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
