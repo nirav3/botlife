@@ -6,6 +6,22 @@ import { ensurePlansSeeded } from './services/planSeed.service';
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0'; // bind to all network interfaces
 
+// A rejected promise anywhere with no .catch (a floating async call, a
+// missed await) otherwise crashes the whole process for every connected
+// user with no useful log — surface it instead of letting Node's default
+// "throw and exit" behavior take over silently.
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
+
+// An uncaught synchronous throw leaves the process in a state Node no
+// longer guarantees is safe to keep serving requests from, so log with
+// full context and exit deliberately rather than limping on.
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+  process.exit(1);
+});
+
 async function start() {
   await ensurePlansSeeded();
 
@@ -21,4 +37,7 @@ async function start() {
   });
 }
 
-start();
+start().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});

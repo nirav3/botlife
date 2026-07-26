@@ -21,10 +21,16 @@ export const authenticate = (
 
   const token = authHeader.split(' ')[1];
 
-  try {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) throw new Error('JWT_SECRET not configured');
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    // A missing secret is a deployment misconfiguration, not a bad token —
+    // reporting it as 401 would make every user look unauthenticated while
+    // hiding the actual ops problem from anyone watching logs/alerts.
+    next(new Error('JWT_SECRET not configured'));
+    return;
+  }
 
+  try {
     const payload = jwt.verify(token, secret) as JwtPayload;
     req.user = { id: payload.id, email: payload.email };
     next();
