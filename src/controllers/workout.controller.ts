@@ -291,6 +291,22 @@ export const addSet = async (
   }
 };
 
+// ─── Helper: verify a set belongs to the given exercise log, which in turn
+// belongs to the given (already ownership-checked) session — without this,
+// a caller could pass their OWN sessionId/exerciseLogId alongside someone
+// else's setId and the set-level Prisma call would happily update/delete it.
+async function assertSetInSession(sessionId: string, exerciseLogId: string, setId: string) {
+  const log = await prisma.exerciseLog.findUnique({ where: { id: exerciseLogId } });
+  if (!log || log.workoutSessionId !== sessionId) {
+    throw new AppError(404, 'Exercise log not found');
+  }
+  const set = await prisma.exerciseSet.findUnique({ where: { id: setId } });
+  if (!set || set.exerciseLogId !== exerciseLogId) {
+    throw new AppError(404, 'Set not found');
+  }
+  return set;
+}
+
 export const updateSet = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -299,8 +315,10 @@ export const updateSet = async (
   try {
     const userId = req.user!.id;
     const sessionId = param(req.params.sessionId);
+    const exerciseLogId = param(req.params.exerciseLogId);
     const setId = param(req.params.setId);
     await assertSessionOwner(sessionId, userId);
+    await assertSetInSession(sessionId, exerciseLogId, setId);
 
     const { weightKg, reps, durationSecs, rpe } = req.body as {
       weightKg?: number;
@@ -333,8 +351,10 @@ export const deleteSet = async (
   try {
     const userId = req.user!.id;
     const sessionId = param(req.params.sessionId);
+    const exerciseLogId = param(req.params.exerciseLogId);
     const setId = param(req.params.setId);
     await assertSessionOwner(sessionId, userId);
+    await assertSetInSession(sessionId, exerciseLogId, setId);
 
     await prisma.exerciseSet.delete({ where: { id: setId } });
     res.json({ message: 'Set deleted' });

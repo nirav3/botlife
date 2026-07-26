@@ -211,8 +211,18 @@ export const deleteFoodItem = async (
   try {
     const userId = req.user!.id;
     const planId = param(req.params.planId);
+    const mealId = param(req.params.mealId);
     const foodId = param(req.params.foodId);
     await assertPlanOwner(planId, userId);
+
+    // Verify the full chain — without this, a caller could pass their OWN
+    // planId alongside someone else's mealId/foodId and delete it, since
+    // owning *a* plan says nothing about owning *this* meal or food item.
+    const meal = await prisma.meal.findUnique({ where: { id: mealId } });
+    if (!meal || meal.mealPlanId !== planId) throw new AppError(404, 'Meal not found');
+
+    const food = await prisma.foodItem.findUnique({ where: { id: foodId } });
+    if (!food || food.mealId !== mealId) throw new AppError(404, 'Food item not found');
 
     await prisma.foodItem.delete({ where: { id: foodId } });
     res.json({ message: 'Food item deleted' });

@@ -52,6 +52,7 @@ app.use(limiter);
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 minutes
   max: 20,                    // 20 login/register attempts per window
+  skip: () => process.env.NODE_ENV === 'test', // tests exercise auth routes far more than a real user would; the limiter itself is covered by a dedicated test
   message: { error: 'Too many authentication attempts, please try again later.' },
 });
 

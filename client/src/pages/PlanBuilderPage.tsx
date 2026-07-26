@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { X } from 'lucide-react';
@@ -7,6 +7,7 @@ import { plansApi } from '@/api/plans';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import type { ImportedPlan } from '@/lib/planImport';
 import type { WorkoutPlanInput } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -56,6 +57,8 @@ export default function PlanBuilderPage() {
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
+  const location = useLocation();
+  const importedPlan = (location.state as { importedPlan?: ImportedPlan } | null)?.importedPlan;
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -101,6 +104,39 @@ export default function PlanBuilderPage() {
       }))
     );
   }, [existingPlan]);
+
+  // Pre-fill the form from an imported JSON/YAML file (create mode only)
+  useEffect(() => {
+    if (!importedPlan || isEditing) return;
+    setName(importedPlan.name);
+    setDescription(importedPlan.description ?? '');
+    setDifficulty(
+      DIFFICULTIES.includes(importedPlan.difficulty ?? '') ? importedPlan.difficulty! : DIFFICULTIES[0]
+    );
+    setGoal(GOALS.includes(importedPlan.goal ?? '') ? importedPlan.goal! : GOALS[0]);
+    setDaysPerWeek(importedPlan.daysPerWeek ? String(importedPlan.daysPerWeek) : '');
+    setEstimatedMinutes(importedPlan.estimatedMinutes ? String(importedPlan.estimatedMinutes) : '');
+    setTagsInput(importedPlan.tags.join(', '));
+    setDays(
+      importedPlan.days.map((day) => ({
+        dayNumber: day.dayNumber,
+        label: day.label,
+        sessionName: day.sessionName,
+        exercises: day.exercises.map((ex) => ({
+          name: ex.name,
+          muscleGroup: ex.muscleGroup,
+          notes: ex.notes ?? '',
+          sets: ex.sets.map((s) => ({
+            setNumber: s.setNumber,
+            targetReps: s.targetReps,
+            rpe: s.rpe != null ? String(s.rpe) : '',
+            isWarmup: s.isWarmup,
+          })),
+        })),
+      }))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importedPlan, isEditing]);
 
   // ── Day/exercise/set editing helpers ─────────────────────────────────────
   const addDay = () => setDays((d) => [...d, emptyDay(d.length + 1)]);
@@ -223,6 +259,12 @@ export default function PlanBuilderPage() {
         </button>
         <h1 className="text-2xl font-bold text-ink">{isEditing ? 'Edit Plan' : 'Create a Plan'}</h1>
       </div>
+
+      {importedPlan && !isEditing && (
+        <div className="bg-accent-violet/10 border border-accent-violet/30 text-accent-violet text-sm rounded-lg px-4 py-2.5">
+          Imported from file — review everything below before saving.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Plan metadata */}
