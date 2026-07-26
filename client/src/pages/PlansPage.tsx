@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Timer, Play, ClipboardList, Search } from 'lucide-react';
+import { Calendar, Timer, Play, ClipboardList, Search, Upload } from 'lucide-react';
 import { plansApi } from '@/api/plans';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { parsePlanFile } from '@/lib/planImport';
 import type { WorkoutPlanSummary, PlanDay } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -233,6 +234,21 @@ export default function PlansPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [filterDifficulty, setFilterDifficulty] = useState<string>('All');
   const [filterGoal, setFilterGoal] = useState<string>('All');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file next time
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const imported = parsePlanFile(text, file.name);
+      toast.success(`Imported "${imported.name}" — review before saving`);
+      navigate('/plans/new', { state: { importedPlan: imported } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to import plan file');
+    }
+  };
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ['plans'],
@@ -267,9 +283,21 @@ export default function PlansPage() {
             Choose a program and start any day — exercises are pre-loaded, you just log your weights and reps.
           </p>
         </div>
-        <Button size="sm" onClick={() => navigate('/plans/new')} className="shrink-0">
-          + Create Plan
-        </Button>
+        <div className="flex gap-2 shrink-0">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,.yaml,.yml,application/json,text/yaml"
+            className="hidden"
+            onChange={handleImportFile}
+          />
+          <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="w-4 h-4" /> Import
+          </Button>
+          <Button size="sm" onClick={() => navigate('/plans/new')}>
+            + Create Plan
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

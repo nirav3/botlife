@@ -14,6 +14,7 @@
     "@tanstack/react-query-devtools": "5.62.7",
     "axios": "1.7.9",
     "date-fns": "4.1.0",
+    "js-yaml": "^5.2.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hot-toast": "2.4.1",
@@ -21,6 +22,7 @@
     "recharts": "2.13.3"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.3",
