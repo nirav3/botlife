@@ -6,7 +6,10 @@ import axios from 'axios';
 import { Pencil, Rocket, Shuffle, Lightbulb, X } from 'lucide-react';
 import { workoutsApi } from '@/api/workouts';
 import { progressionApi } from '@/api/progression';
+import { weightApi } from '@/api/weight';
 import { useUnits } from '@/hooks/useUnits';
+import { useAuth } from '@/hooks/useAuth';
+import { getDefaultStartingWeightKg } from '@/lib/defaultWeight';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -85,15 +88,30 @@ function EditableCell({ value, placeholder, inputType = 'number', step = 'any', 
 // ─── Progression badge for an exercise ───────────────────────────────────────
 function ProgressionBadge({
   suggestion,
+  estimatedWeightKg,
   units,
 }: {
   suggestion: ProgressionSuggestion | undefined;
+  /** No logged history yet — a rough bodyweight/age/sex-based starting-point guess. */
+  estimatedWeightKg?: number | null;
   units: ReturnType<typeof useUnits>;
 }) {
-  if (!suggestion) return null;
+  const decimals = units.isImperial ? 0 : 1;
+
+  if (!suggestion) {
+    if (estimatedWeightKg == null) return null;
+    const estimated = units.kgToDisplay(units.roundSuggestedWeightKg(estimatedWeightKg));
+    return (
+      <span
+        className="inline-flex items-center gap-1 text-xs bg-surface-2 text-muted border border-line px-2 py-0.5 rounded-full"
+        title="No logged history for this exercise yet — a rough starting point based on your profile"
+      >
+        Estimated start: ~{estimated.toFixed(decimals)} {units.weightUnit}
+      </span>
+    );
+  }
 
   const suggested = units.kgToDisplay(units.roundSuggestedWeightKg(suggestion.suggestedWeightKg));
-  const decimals = units.isImperial ? 0 : 1;
 
   if (suggestion.readyForProgression) {
     return (
@@ -121,6 +139,7 @@ function ExerciseCard({
   units: ReturnType<typeof useUnits>;
 }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [addSetModal, setAddSetModal] = useState(false);
   const [setWeightDisplay, setSetWeightDisplay] = useState('');
   const [setReps, setSetReps] = useState('');
@@ -135,6 +154,11 @@ function ExerciseCard({
     retry: false,
     throwOnError: false,
   });
+
+  // Only needed as an input to the no-history fallback estimate below —
+  // cheap to fetch, and React Query dedupes this against the same call
+  // already made elsewhere (Dashboard, Weight page) in the same session.
+  const { data: weightStats } = useQuery({ queryKey: ['weight-stats'], queryFn: weightApi.stats });
 
   const updateSetMutation = useMutation({
     mutationFn: ({ setId, data }: { setId: string; data: { weightKg?: number; reps?: number } }) =>
@@ -206,9 +230,25 @@ function ExerciseCard({
   // Progression-engine-driven placeholders for empty (working) sets — the
   // weight/reps to aim for today, instead of a generic static number.
   // Ready to progress → the bumped-up weight; otherwise → last time's weight.
-  const suggestedWeightKg = suggestion?.readyForProgression
+  const progressionWeightKg = suggestion?.readyForProgression
     ? suggestion.suggestedWeightKg
     : suggestion?.currentWeightKg ?? null;
+
+  // No logged history for this exact exercise yet (first time, or right
+  // after a swap) — fall back to a rough bodyweight/age/sex-based estimate
+  // rather than one flat generic number for every exercise. Still falls
+  // through to the old generic placeholder below if we don't have enough
+  // profile info to make even that estimate.
+  const fallbackWeightKg = progressionWeightKg == null
+    ? getDefaultStartingWeightKg({
+        dateOfBirth: user?.dateOfBirth,
+        sex: user?.sex,
+        muscleGroup: log.muscleGroup,
+        bodyweightKg: weightStats?.current,
+      })
+    : null;
+
+  const suggestedWeightKg = progressionWeightKg ?? fallbackWeightKg;
   const suggestedWeightPlaceholder = suggestedWeightKg != null
     ? units.kgToDisplay(units.roundSuggestedWeightKg(suggestedWeightKg)).toFixed(units.isImperial ? 0 : 1)
     : null;
@@ -232,7 +272,7 @@ function ExerciseCard({
           <div className="space-y-1">
             <h2 className="font-semibold text-ink">{log.exerciseName}</h2>
             {log.muscleGroup && <p className="text-xs text-muted">{log.muscleGroup}</p>}
-            <ProgressionBadge suggestion={suggestion} units={units} />
+            <ProgressionBadge suggestion={suggestion} estimatedWeightKg={fallbackWeightKg} units={units} />
           </div>
           <div className="flex gap-2 shrink-0">
             {!hasStarted && (

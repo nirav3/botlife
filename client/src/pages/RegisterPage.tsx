@@ -47,7 +47,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(name, email, password, securityQuestion, securityAnswer);
-      navigate('/');
+      navigate('/onboarding'); // brand-new account — always ask once
     } catch (err) {
       const msg = axios.isAxiosError(err)
         ? (err.response?.data as { error?: string })?.error ?? 'Registration failed'

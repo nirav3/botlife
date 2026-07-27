@@ -55,7 +55,9 @@ describe('RegisterPage: create account form', () => {
         'Fluffy'
       )
     );
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/'));
+    // A brand-new account always goes to onboarding once, regardless of the
+    // fields on the returned user.
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/onboarding'));
   });
 
   it('negative: a password under 8 characters is rejected client-side before calling register()', async () => {

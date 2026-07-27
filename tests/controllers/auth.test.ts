@@ -283,6 +283,53 @@ describe('PATCH /api/auth/me', () => {
   });
 });
 
+describe('PATCH /api/auth/me — profile fields for weight-suggestion defaults', () => {
+  it('positive: saves a valid dateOfBirth and sex', async () => {
+    (prisma.user.update as jest.Mock).mockResolvedValue({
+      ...baseUser,
+      dateOfBirth: new Date('1994-05-01'),
+      sex: 'FEMALE',
+    });
+
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', authHeader(baseUser.id))
+      .send({ dateOfBirth: '1994-05-01', sex: 'FEMALE' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.sex).toBe('FEMALE');
+  });
+
+  it('negative: rejects an invalid sex value (not MALE/FEMALE)', async () => {
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', authHeader(baseUser.id))
+      .send({ sex: 'ROBOT' });
+
+    expect(res.status).toBe(400);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('negative: rejects a malformed dateOfBirth string', async () => {
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', authHeader(baseUser.id))
+      .send({ dateOfBirth: 'not-a-date' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('negative: rejects an unrealistic age (e.g. a birthdate implying 200 years old)', async () => {
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set('Authorization', authHeader(baseUser.id))
+      .send({ dateOfBirth: '1820-01-01' });
+
+    expect(res.status).toBe(400);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+});
+
 describe('Password reset flow', () => {
   it('positive: forgotPassword returns the security question for an existing account', async () => {
     (prisma.user.findUnique as jest.Mock).mockResolvedValue({ securityQuestion: baseUser.securityQuestion });

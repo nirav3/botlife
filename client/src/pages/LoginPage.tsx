@@ -191,6 +191,12 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
 
 // ─── Login page ───────────────────────────────────────────────────────────────
 
+// A returning user who already filled this in (or explicitly skipped it)
+// goes straight to the dashboard; anyone else gets one more chance to see it.
+function postLoginPath(user: { dateOfBirth?: string | null; sex?: string | null; onboardingSkipped?: boolean }): string {
+  return !user.dateOfBirth && !user.sex && !user.onboardingSkipped ? '/onboarding' : '/';
+}
+
 export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -203,8 +209,8 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/');
+      const user = await login(email, password);
+      navigate(postLoginPath(user));
     } catch (err) {
       const msg = axios.isAxiosError(err)
         ? (err.response?.data as { error?: string })?.error ?? 'Login failed'
@@ -218,8 +224,8 @@ export default function LoginPage() {
   const handleGoogleSuccess = async (credential?: string) => {
     if (!credential) { toast.error('Google sign-in failed'); return; }
     try {
-      await loginWithGoogle(credential);
-      navigate('/');
+      const user = await loginWithGoogle(credential);
+      navigate(postLoginPath(user));
     } catch (err) {
       const msg = axios.isAxiosError(err)
         ? (err.response?.data as { error?: string })?.error ?? 'Google sign-in failed'

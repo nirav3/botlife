@@ -6,9 +6,9 @@ interface AuthContextValue {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (idToken: string) => Promise<void>;
-  register: (name: string, email: string, password: string, securityQuestion?: string, securityAnswer?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  loginWithGoogle: (idToken: string) => Promise<User>;
+  register: (name: string, email: string, password: string, securityQuestion?: string, securityAnswer?: string) => Promise<User>;
   logout: () => void;
   setUser: (user: User) => void;
 }
@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('token', res.data.token);
     setToken(res.data.token);
     setUser(res.data.user);
+    return res.data.user;
   };
 
   const loginWithGoogle = async (idToken: string) => {
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('token', res.data.token);
     setToken(res.data.token);
     setUser(res.data.user);
+    return res.data.user;
   };
 
   const register = async (name: string, email: string, password: string, securityQuestion?: string, securityAnswer?: string) => {
@@ -48,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('token', res.data.token);
     setToken(res.data.token);
     setUser(res.data.user);
+    return res.data.user;
   };
 
   const logout = () => {

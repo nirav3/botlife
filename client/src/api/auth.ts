@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { AuthResponse, User, UnitSystem } from '@/types';
+import type { AuthResponse, User, UnitSystem, Sex } from '@/types';
 
 export const authApi = {
   register: (data: { email: string; password: string; name: string; securityQuestion?: string; securityAnswer?: string }) =>
@@ -14,7 +14,7 @@ export const authApi = {
   me: () =>
     apiClient.get<{ data: User }>('/auth/me').then((r) => r.data.data),
 
-  updateMe: (data: { name?: string; unitSystem?: UnitSystem }) =>
+  updateMe: (data: { name?: string; unitSystem?: UnitSystem; dateOfBirth?: string; sex?: Sex; onboardingSkipped?: boolean }) =>
     apiClient.patch<{ data: User }>('/auth/me', data).then((r) => r.data.data),
 
   forgotPassword: (email: string) =>
