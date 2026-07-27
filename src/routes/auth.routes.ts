@@ -41,8 +41,21 @@ router.get('/me', authenticate, getMe);
 router.patch(
   '/me',
   authenticate,
-  [body('unitSystem').optional().isIn(['METRIC', 'IMPERIAL']),
-   body('name').optional().trim().notEmpty()],
+  [
+    body('unitSystem').optional().isIn(['METRIC', 'IMPERIAL']),
+    body('name').optional().trim().notEmpty(),
+    body('sex').optional().isIn(['MALE', 'FEMALE']),
+    body('onboardingSkipped').optional().isBoolean(),
+    body('dateOfBirth')
+      .optional()
+      .isISO8601()
+      .withMessage('dateOfBirth must be a valid date')
+      .custom((value) => {
+        const age = (Date.now() - new Date(value).getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+        if (age < 5 || age > 120) throw new Error('dateOfBirth must reflect a realistic age');
+        return true;
+      }),
+  ],
   validate,
   updateMe
 );

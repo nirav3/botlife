@@ -49,7 +49,10 @@ export const register = async (
         securityQuestion: securityQuestion ?? null,
         securityAnswerHash: securityAnswerHash ?? null,
       },
-      select: { id: true, email: true, name: true, createdAt: true },
+      select: {
+        id: true, email: true, name: true, createdAt: true,
+        dateOfBirth: true, sex: true, onboardingSkipped: true,
+      },
     });
 
     const token = signToken(user.id, user.email);
@@ -84,7 +87,10 @@ export const login = async (
     const token = signToken(user.id, user.email);
     res.json({
       data: {
-        user: { id: user.id, email: user.email, name: user.name },
+        user: {
+          id: user.id, email: user.email, name: user.name,
+          dateOfBirth: user.dateOfBirth, sex: user.sex, onboardingSkipped: user.onboardingSkipped,
+        },
         token,
       },
     });
@@ -140,7 +146,10 @@ export const googleAuth = async (
     const token = signToken(user.id, user.email);
     res.json({
       data: {
-        user: { id: user.id, email: user.email, name: user.name },
+        user: {
+          id: user.id, email: user.email, name: user.name,
+          dateOfBirth: user.dateOfBirth, sex: user.sex, onboardingSkipped: user.onboardingSkipped,
+        },
         token,
       },
     });
@@ -157,7 +166,10 @@ export const getMe = async (
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      select: { id: true, email: true, name: true, unitSystem: true, createdAt: true },
+      select: {
+        id: true, email: true, name: true, unitSystem: true, createdAt: true,
+        dateOfBirth: true, sex: true, onboardingSkipped: true, googleId: true,
+      },
     });
 
     if (!user) throw new AppError(404, 'User not found');
@@ -173,9 +185,12 @@ export const updateMe = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, unitSystem } = req.body as {
+    const { name, unitSystem, dateOfBirth, sex, onboardingSkipped } = req.body as {
       name?: string;
       unitSystem?: 'METRIC' | 'IMPERIAL';
+      dateOfBirth?: string;
+      sex?: 'MALE' | 'FEMALE';
+      onboardingSkipped?: boolean;
     };
 
     const user = await prisma.user.update({
@@ -183,8 +198,14 @@ export const updateMe = async (
       data: {
         ...(name !== undefined && { name }),
         ...(unitSystem !== undefined && { unitSystem }),
+        ...(dateOfBirth !== undefined && { dateOfBirth: new Date(dateOfBirth) }),
+        ...(sex !== undefined && { sex }),
+        ...(onboardingSkipped !== undefined && { onboardingSkipped }),
       },
-      select: { id: true, email: true, name: true, unitSystem: true, createdAt: true },
+      select: {
+        id: true, email: true, name: true, unitSystem: true, createdAt: true,
+        dateOfBirth: true, sex: true, onboardingSkipped: true,
+      },
     });
 
     res.json({ data: user });

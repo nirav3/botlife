@@ -39,8 +39,10 @@ beforeEach(() => {
 });
 
 describe('LoginPage: sign-in form', () => {
-  it('positive: submits valid credentials, logs in, and navigates to the dashboard', async () => {
-    mockLogin.mockResolvedValue(undefined);
+  it('positive: submits valid credentials, logs in, and navigates to the dashboard (profile already set up)', async () => {
+    // onboardingSkipped: true simulates a returning user who's already been
+    // through onboarding (or explicitly skipped it) — straight to the dashboard.
+    mockLogin.mockResolvedValue({ id: 'u1', email: 'jane@example.com', name: 'Jane', onboardingSkipped: true });
     const user = userEvent.setup();
     renderLoginPage();
 
@@ -50,6 +52,18 @@ describe('LoginPage: sign-in form', () => {
 
     await waitFor(() => expect(mockLogin).toHaveBeenCalledWith('jane@example.com', 'correct-password'));
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/'));
+  });
+
+  it('positive: a returning user who never completed their profile is sent to onboarding, not the dashboard', async () => {
+    mockLogin.mockResolvedValue({ id: 'u2', email: 'new@example.com', name: 'New', onboardingSkipped: false, dateOfBirth: null, sex: null });
+    const user = userEvent.setup();
+    renderLoginPage();
+
+    await user.type(screen.getByPlaceholderText('you@example.com'), 'new@example.com');
+    await user.type(screen.getByPlaceholderText('••••••••'), 'correct-password');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/onboarding'));
   });
 
   it('negative: wrong credentials show an error toast and do not navigate', async () => {

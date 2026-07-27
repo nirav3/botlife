@@ -136,12 +136,20 @@ export default function Layout() {
 
         <div>
           <p className="text-xs text-muted truncate">{user?.email}</p>
-          <button
-            onClick={handleLogout}
-            className="mt-1 text-xs text-danger hover:opacity-80 transition-opacity"
-          >
-            Sign out
-          </button>
+          <div className="flex items-center gap-3 mt-1">
+            <button
+              onClick={() => navigate('/onboarding')}
+              className="text-xs text-accent-violet hover:underline transition-opacity"
+            >
+              Edit profile
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-danger hover:opacity-80 transition-opacity"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
     </>

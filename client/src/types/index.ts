@@ -1,5 +1,6 @@
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export type UnitSystem = 'METRIC' | 'IMPERIAL';
+export type Sex = 'MALE' | 'FEMALE';
 
 export interface User {
   id: string;
@@ -7,6 +8,12 @@ export interface User {
   name: string;
   unitSystem: UnitSystem;
   createdAt: string;
+  // Optional — used only to estimate a starting weight for exercises with
+  // no logged history yet. Never required to use the app.
+  dateOfBirth?: string | null;
+  sex?: Sex | null;
+  onboardingSkipped?: boolean;
+  googleId?: string | null;
 }
 
 export interface AuthResponse {
