@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { X } from 'lucide-react';
 import { plansApi } from '@/api/plans';
@@ -57,6 +57,7 @@ export default function PlanBuilderPage() {
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const importedPlan = (location.state as { importedPlan?: ImportedPlan } | null)?.importedPlan;
 
@@ -238,6 +239,7 @@ export default function PlanBuilderPage() {
   const saveMutation = useMutation({
     mutationFn: () => (isEditing ? plansApi.update(id!, buildPayload()) : plansApi.create(buildPayload())),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
       toast.success(isEditing ? 'Plan updated' : 'Plan created');
       navigate('/plans');
     },
