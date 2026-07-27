@@ -12,31 +12,21 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 
 // ─── Reset password modal ─────────────────────────────────────────────────────
-
-type ResetStep = 'email' | 'answer' | 'newPassword' | 'done';
+// Single step: hand over an email, get a generic acknowledgement back. The
+// actual reset happens on the /reset-password page linked from the email —
+// this modal never learns whether the account exists.
 
 function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
-  const [step, setStep] = useState<ResetStep>('email');
   const [email, setEmail] = useState('');
-  const [securityQuestion, setSecurityQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [resetToken, setResetToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  // Step 1 — look up security question by email
-  const handleEmailSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await authApi.forgotPassword(email);
-      if (!res.data.securityQuestion) {
-        toast.error('No security question set for this account. Use the CLI script to reset.');
-        return;
-      }
-      setSecurityQuestion(res.data.securityQuestion);
-      setStep('answer');
+      await authApi.forgotPassword(email);
+      setSent(true);
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
@@ -44,71 +34,13 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  // Step 2 — verify security answer → receive reset token
-  const handleAnswerSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await authApi.verifySecurityAnswer(email, answer);
-      setResetToken(res.data.resetToken);
-      setStep('newPassword');
-    } catch (err) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data as { error?: string })?.error ?? 'Incorrect answer'
-        : 'Incorrect answer';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 3 — set new password using the token
-  const handlePasswordSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (newPassword.length < 8) { toast.error('Password must be at least 8 characters'); return; }
-    if (newPassword !== confirmPassword) { toast.error('Passwords do not match'); return; }
-    setLoading(true);
-    try {
-      await authApi.resetPassword(resetToken, newPassword);
-      setStep('done');
-    } catch (err) {
-      const msg = axios.isAxiosError(err)
-        ? (err.response?.data as { error?: string })?.error ?? 'Reset failed'
-        : 'Reset failed';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Modal open onClose={onClose} title="Reset password">
-      {/* Step indicator */}
-      {step !== 'done' && (
-        <div className="flex items-center gap-2 mb-6">
-          {(['email', 'answer', 'newPassword'] as ResetStep[]).map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
-                  step === s
-                    ? 'bg-btn-primary text-btn-primary-text'
-                    : ['answer', 'newPassword'].indexOf(step) > ['answer', 'newPassword'].indexOf(s)
-                    ? 'bg-surface-2 text-accent-violet'
-                    : 'bg-surface-2 text-muted'
-                }`}
-              >
-                {i + 1}
-              </div>
-              {i < 2 && <div className="flex-1 h-px bg-line w-8" />}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Step 1: Email */}
-      {step === 'email' && (
-        <form onSubmit={handleEmailSubmit} className="space-y-4">
-          <p className="text-sm text-muted">Enter your email and we'll retrieve your security question.</p>
+      {!sent ? (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-sm text-muted">
+            Enter your email and, if you have an account, we'll send a link to reset your password.
+          </p>
           <Input
             label="Email"
             type="email"
@@ -120,68 +52,16 @@ function ForgotPasswordModal({ onClose }: { onClose: () => void }) {
           />
           <div className="flex gap-3 justify-end">
             <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
-            <Button type="submit" loading={loading}>Continue</Button>
+            <Button type="submit" loading={loading}>Send reset link</Button>
           </div>
         </form>
-      )}
-
-      {/* Step 2: Security answer */}
-      {step === 'answer' && (
-        <form onSubmit={handleAnswerSubmit} className="space-y-4">
-          <div className="bg-surface-2 rounded-lg px-4 py-3">
-            <p className="text-xs text-muted uppercase tracking-wide font-medium mb-1">Security question</p>
-            <p className="text-sm font-medium text-ink">{securityQuestion}</p>
-          </div>
-          <Input
-            label="Your answer"
-            type="text"
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            placeholder="Answer is case-insensitive"
-            required
-            autoFocus
-          />
-          <div className="flex gap-3 justify-end">
-            <Button variant="secondary" type="button" onClick={() => setStep('email')}>Back</Button>
-            <Button type="submit" loading={loading}>Verify</Button>
-          </div>
-        </form>
-      )}
-
-      {/* Step 3: New password */}
-      {step === 'newPassword' && (
-        <form onSubmit={handlePasswordSubmit} className="space-y-4">
-          <p className="text-sm text-muted">Almost there — set your new password. This link expires in 15 minutes.</p>
-          <Input
-            label="New password"
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Min 8 characters"
-            required
-            autoFocus
-          />
-          <Input
-            label="Confirm password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Repeat new password"
-            required
-          />
-          <div className="flex gap-3 justify-end">
-            <Button variant="secondary" type="button" onClick={() => setStep('answer')}>Back</Button>
-            <Button type="submit" loading={loading}>Reset password</Button>
-          </div>
-        </form>
-      )}
-
-      {/* Done */}
-      {step === 'done' && (
+      ) : (
         <div className="text-center py-4 space-y-4">
           <CheckCircle2 className="w-12 h-12 mx-auto text-accent-lime" />
-          <p className="font-semibold text-ink">Password reset!</p>
-          <p className="text-sm text-muted">You can now sign in with your new password.</p>
+          <p className="font-semibold text-ink">Check your email</p>
+          <p className="text-sm text-muted">
+            If an account exists for {email}, a reset link is on its way. It expires in 15 minutes.
+          </p>
           <Button onClick={onClose} className="w-full">Back to login</Button>
         </div>
       )}

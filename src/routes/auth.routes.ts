@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { body } from 'express-validator';
-import { register, login, googleAuth, getMe, updateMe, forgotPassword, verifySecurityAnswer, resetPassword } from '../controllers/auth.controller';
+import { body, param } from 'express-validator';
+import { register, login, googleAuth, getMe, updateMe, forgotPassword, getResetQuestion, resetPassword } from '../controllers/auth.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
 
@@ -60,7 +60,9 @@ router.patch(
   updateMe
 );
 
-// Password reset flow (no email required — uses security question)
+// Password reset flow — email delivers the reset token (proves inbox
+// access); the security question, when set, is a second factor required
+// alongside it. Neither is sufficient to reset the password on its own.
 router.post(
   '/forgot-password',
   [body('email').isEmail().normalizeEmail()],
@@ -68,20 +70,18 @@ router.post(
   forgotPassword
 );
 
-router.post(
-  '/verify-answer',
-  [
-    body('email').isEmail().normalizeEmail(),
-    body('answer').trim().notEmpty(),
-  ],
+router.get(
+  '/reset-password/:token',
+  [param('token').notEmpty()],
   validate,
-  verifySecurityAnswer
+  getResetQuestion
 );
 
 router.post(
   '/reset-password',
   [
     body('token').notEmpty(),
+    body('answer').optional().trim().notEmpty(),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
   ],
   validate,

@@ -26,6 +26,11 @@ import './docs/plans.docs';
 
 const app = express();
 
+// Render (and most PaaS hosts) terminate TLS at a proxy in front of the app,
+// so without this req.protocol always reports 'http' — which would leak
+// into password-reset links built from it as a fallback for APP_URL.
+app.set('trust proxy', 1);
+
 // ─── Security ────────────────────────────────────────────────────────────────
 // Disable CSP on static assets — it blocks Vite's ES module scripts.
 // Relax COOP to allow-popups — the default 'same-origin' silently breaks

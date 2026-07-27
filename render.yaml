@@ -25,6 +25,15 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      # From https://resend.com — without this, password-reset links are
+      # logged instead of emailed, so set it before relying on that flow.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      # The deployed app's public URL, used to build links in emails.
+      - key: APP_URL
+        value: https://botlife-api.onrender.com
       # Render generates and stores this itself — you'll never see or need
       # to supply the actual value.
       - key: JWT_SECRET
