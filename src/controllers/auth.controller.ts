@@ -7,6 +7,7 @@ import validator from 'validator';
 import { prisma } from '../lib/prisma';
 import { AppError } from '../middleware/error.middleware';
 import { AuthenticatedRequest } from '../types';
+import { sendPasswordResetEmail } from '../lib/email';
 
 const SALT_ROUNDS = 12;
 const RESET_TOKEN_TTL_MINUTES = 15;
@@ -214,7 +215,11 @@ export const updateMe = async (
   }
 };
 
-// ─── Step 1: look up user and return their security question ─────────────────
+// ─── Step 1: request a reset link ─────────────────────────────────────────────
+// Responds identically whether or not the account exists, so the endpoint
+// can't be used to enumerate registered emails. If the account exists, an
+// unguessable token is emailed to it — the token itself (not the answer to
+// the security question) is what proves the requester owns the inbox.
 export const forgotPassword = async (
   req: Request,
   res: Response,
@@ -223,76 +228,88 @@ export const forgotPassword = async (
   try {
     const { email } = req.body as { email: string };
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { securityQuestion: true },
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
-    // Always return 200 — don't leak whether the email exists
-    if (!user || !user.securityQuestion) {
-      res.json({
-        data: { securityQuestion: null },
-        message: 'No security question set for this account',
+    if (user) {
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenExpiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { resetToken, resetTokenExpiresAt },
       });
-      return;
+
+      const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+      const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
+      await sendPasswordResetEmail(user.email, resetUrl);
     }
 
-    res.json({ data: { securityQuestion: user.securityQuestion } });
+    res.json({ message: "If an account exists for that email, we've sent password reset instructions." });
   } catch (err) {
     next(err);
   }
 };
 
-// ─── Step 2: verify the answer, return a short-lived reset token ─────────────
-export const verifySecurityAnswer = async (
+// ─── Step 2: look up the security question for a valid reset link ────────────
+// Only reachable with the actual emailed token (32 random bytes — not
+// guessable), so it's safe to reveal the question here even though doing so
+// at the forgot-password step would leak account existence.
+export const getResetQuestion = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { email, answer } = req.body as { email: string; answer: string };
+    const { token } = req.params as { token: string };
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { resetToken: token } });
 
-    // Generic error — don't reveal whether email exists or answer is wrong
-    const genericError = new AppError(400, 'Incorrect answer');
+    if (!user || !user.resetTokenExpiresAt || user.resetTokenExpiresAt < new Date()) {
+      throw new AppError(400, 'Reset link is invalid or has expired');
+    }
 
-    if (!user || !user.securityAnswerHash) throw genericError;
-
-    const match = await bcrypt.compare(answer.toLowerCase().trim(), user.securityAnswerHash);
-    if (!match) throw genericError;
-
-    // Generate a short-lived opaque reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
-
-    await prisma.user.update({
-      where: { email },
-      data: { resetToken, resetTokenExpiresAt },
-    });
-
+    // Google-only accounts have no password to reset — same rule login
+    // already enforces. The client uses this to show a "use Google" message
+    // instead of a password form, without ever having a real password set.
     res.json({
-      data: { resetToken },
-      message: `Token valid for ${RESET_TOKEN_TTL_MINUTES} minutes`,
+      data: {
+        securityQuestion: user.securityQuestion,
+        requiresGoogleSignIn: !user.passwordHash,
+      },
     });
   } catch (err) {
     next(err);
   }
 };
 
-// ─── Step 3: exchange token for a new password ───────────────────────────────
+// ─── Step 3: exchange the emailed token (+ security answer, if set) for a
+// new password. The token proves inbox access; the answer, when the account
+// has one on file, is a second factor on top of it — neither is sufficient
+// alone to take over the account.
 export const resetPassword = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { token, password } = req.body as { token: string; password: string };
+    const { token, answer, password } = req.body as { token: string; answer?: string; password: string };
 
     const user = await prisma.user.findUnique({ where: { resetToken: token } });
 
     if (!user || !user.resetTokenExpiresAt || user.resetTokenExpiresAt < new Date()) {
       throw new AppError(400, 'Reset token is invalid or has expired');
+    }
+
+    // Belt-and-suspenders: getResetQuestion already steers the client away
+    // from this for Google-only accounts, but never take a password from a
+    // direct API call just because it skipped that step.
+    if (!user.passwordHash) {
+      throw new AppError(400, 'This account uses Google sign-in. Please continue with Google.');
+    }
+
+    if (user.securityAnswerHash) {
+      const match = answer ? await bcrypt.compare(answer.toLowerCase().trim(), user.securityAnswerHash) : false;
+      if (!match) throw new AppError(400, 'Incorrect answer');
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);

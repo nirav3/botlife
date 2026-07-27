@@ -331,35 +331,186 @@ describe('PATCH /api/auth/me — profile fields for weight-suggestion defaults',
 });
 
 describe('Password reset flow', () => {
-  it('positive: forgotPassword returns the security question for an existing account', async () => {
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ securityQuestion: baseUser.securityQuestion });
+  it('positive: forgotPassword generates and stores a reset token for an existing account', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(baseUser);
+    (prisma.user.update as jest.Mock).mockResolvedValue(baseUser);
 
     const res = await request(app).post('/api/auth/forgot-password').send({ email: baseUser.email });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.securityQuestion).toBe(baseUser.securityQuestion);
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: baseUser.id },
+        data: expect.objectContaining({
+          resetToken: expect.any(String),
+          resetTokenExpiresAt: expect.any(Date),
+        }),
+      })
+    );
   });
 
-  it('negative: forgotPassword returns 200 (not 404) for an unknown email — never confirms account existence', async () => {
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+  it('negative: forgotPassword returns the SAME response for an unknown email — never confirms account existence', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(baseUser);
+    (prisma.user.update as jest.Mock).mockResolvedValue(baseUser);
+    const knownRes = await request(app).post('/api/auth/forgot-password').send({ email: baseUser.email });
 
-    const res = await request(app).post('/api/auth/forgot-password').send({ email: 'ghost@example.com' });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    const unknownRes = await request(app).post('/api/auth/forgot-password').send({ email: 'ghost@example.com' });
+
+    expect(unknownRes.status).toBe(200);
+    expect(unknownRes.body).toEqual(knownRes.body);
+    expect(prisma.user.update).toHaveBeenCalledTimes(1); // only for the known account
+  });
+
+  it("negative: forgotPassword never returns a resetToken or securityQuestion in the response body", async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(baseUser);
+    (prisma.user.update as jest.Mock).mockResolvedValue(baseUser);
+
+    const res = await request(app).post('/api/auth/forgot-password').send({ email: baseUser.email });
+
+    expect(JSON.stringify(res.body)).not.toMatch(/resetToken|securityQuestion/);
+  });
+
+  it('positive: getResetQuestion returns the security question for a valid, unexpired token', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      ...baseUser,
+      resetToken: 'valid-token',
+      resetTokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+
+    const res = await request(app).get('/api/auth/reset-password/valid-token');
 
     expect(res.status).toBe(200);
-    expect(res.body.data.securityQuestion).toBeNull();
+    expect(res.body.data.securityQuestion).toBe(baseUser.securityQuestion);
+    expect(res.body.data.requiresGoogleSignIn).toBe(false);
   });
 
-  it('negative: verifySecurityAnswer gives the same generic error for a wrong answer as for an unknown user', async () => {
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ ...baseUser, securityAnswerHash: 'somehash' });
+  it('positive: getResetQuestion flags a Google-only account (no passwordHash) instead of offering a password form', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      ...baseUser,
+      passwordHash: null,
+      googleId: 'google-sub-789',
+      resetToken: 'valid-token',
+      resetTokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+
+    const res = await request(app).get('/api/auth/reset-password/valid-token');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.requiresGoogleSignIn).toBe(true);
+  });
+
+  it('negative: getResetQuestion rejects an unknown token', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+    const res = await request(app).get('/api/auth/reset-password/not-a-real-token');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/invalid or has expired/);
+  });
+
+  it('negative: getResetQuestion rejects an expired token', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      ...baseUser,
+      resetToken: 'stale-token',
+      resetTokenExpiresAt: new Date(Date.now() - 1000),
+    });
+
+    const res = await request(app).get('/api/auth/reset-password/stale-token');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/invalid or has expired/);
+  });
+
+  it('negative: resetPassword refuses a Google-only account even with a valid token — mirrors the login error', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      ...baseUser,
+      passwordHash: null,
+      googleId: 'google-sub-789',
+      resetToken: 'valid-token',
+      resetTokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'valid-token', password: 'newpassword123' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Google sign-in/);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('positive: resetPassword succeeds with a valid token when the account has no security question', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      ...baseUser,
+      securityAnswerHash: null,
+      resetToken: 'valid-token',
+      resetTokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+    (prisma.user.update as jest.Mock).mockResolvedValue(baseUser);
+
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'valid-token', password: 'newpassword123' });
+
+    expect(res.status).toBe(200);
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ resetToken: null, resetTokenExpiresAt: null }) })
+    );
+  });
+
+  it('positive: resetPassword succeeds with a valid token AND the correct security answer', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      ...baseUser,
+      securityAnswerHash: 'somehash',
+      resetToken: 'valid-token',
+      resetTokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+    (prisma.user.update as jest.Mock).mockResolvedValue(baseUser);
+    const bcrypt = require('bcryptjs');
+    jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'valid-token', answer: 'Fluffy', password: 'newpassword123' });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('negative: resetPassword rejects a valid token with the wrong security answer — the token alone is not enough', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      ...baseUser,
+      securityAnswerHash: 'somehash',
+      resetToken: 'valid-token',
+      resetTokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
     const bcrypt = require('bcryptjs');
     jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
 
     const res = await request(app)
-      .post('/api/auth/verify-answer')
-      .send({ email: baseUser.email, answer: 'wrong answer' });
+      .post('/api/auth/reset-password')
+      .send({ token: 'valid-token', answer: 'wrong answer', password: 'newpassword123' });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Incorrect answer');
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('negative: resetPassword rejects a valid token with a missing answer when one is required', async () => {
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      ...baseUser,
+      securityAnswerHash: 'somehash',
+      resetToken: 'valid-token',
+      resetTokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'valid-token', password: 'newpassword123' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Incorrect answer');
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it('negative: resetPassword rejects an expired or unknown token', async () => {

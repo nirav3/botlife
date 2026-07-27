@@ -12,6 +12,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import Layout from '@/components/Layout';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import OnboardingPage from '@/pages/OnboardingPage';
 import DashboardPage from '@/pages/DashboardPage';
 import WorkoutsPage from '@/pages/WorkoutsPage';
@@ -52,6 +53,7 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Standalone protected route — deliberately outside the Layout
               shell, same pattern as login/register */}

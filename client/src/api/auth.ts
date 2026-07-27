@@ -19,16 +19,18 @@ export const authApi = {
 
   forgotPassword: (email: string) =>
     apiClient
-      .post<{ data: { securityQuestion: string | null }; message?: string }>('/auth/forgot-password', { email })
+      .post<{ message: string }>('/auth/forgot-password', { email })
       .then((r) => r.data),
 
-  verifySecurityAnswer: (email: string, answer: string) =>
+  getResetQuestion: (token: string) =>
     apiClient
-      .post<{ data: { resetToken: string } }>('/auth/verify-answer', { email, answer })
+      .get<{ data: { securityQuestion: string | null; requiresGoogleSignIn: boolean } }>(
+        `/auth/reset-password/${encodeURIComponent(token)}`
+      )
       .then((r) => r.data),
 
-  resetPassword: (token: string, password: string) =>
+  resetPassword: (token: string, password: string, answer?: string) =>
     apiClient
-      .post<{ message: string }>('/auth/reset-password', { token, password })
+      .post<{ message: string }>('/auth/reset-password', { token, password, answer })
       .then((r) => r.data),
 };
