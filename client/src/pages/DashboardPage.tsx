@@ -1,22 +1,36 @@
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { Scale, Dumbbell, TrendingUp, Rocket } from 'lucide-react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
+import { Scale, Dumbbell, TrendingUp, Rocket, Play } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnits } from '@/hooks/useUnits';
 import { weightApi } from '@/api/weight';
 import { workoutsApi } from '@/api/workouts';
 import { progressionApi } from '@/api/progression';
+import { plansApi } from '@/api/plans';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const units = useUnits();
+  const navigate = useNavigate();
 
   const { data: weightStats } = useQuery({ queryKey: ['weight-stats'], queryFn: weightApi.stats });
   const { data: sessions } = useQuery({ queryKey: ['workouts', 1], queryFn: () => workoutsApi.list({ limit: 5 }) });
   const { data: progression } = useQuery({ queryKey: ['progression'], queryFn: () => progressionApi.all() });
+  const { data: nextWorkout } = useQuery({ queryKey: ['next-workout'], queryFn: plansApi.nextWorkout });
+
+  const startNextWorkoutMutation = useMutation({
+    mutationFn: () => plansApi.startDay(nextWorkout!.planId, nextWorkout!.dayNumber),
+    onSuccess: (session) => {
+      toast.success('Session started!');
+      navigate(`/workouts/${session.id}`);
+    },
+    onError: () => toast.error('Failed to start session'),
+  });
 
   const readyCount = progression?.ready.length ?? 0;
 
@@ -70,6 +84,25 @@ export default function DashboardPage() {
           valueColor="text-accent-violet"
         />
       </div>
+
+      {/* Continue plan — jump straight to the next workout instead of
+          having to go to Plans and pick a day by hand */}
+      {nextWorkout && (
+        <Card>
+          <CardBody className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-xs text-muted uppercase tracking-wide">Continue plan · {nextWorkout.planName}</p>
+              <p className="font-semibold text-ink mt-0.5">{nextWorkout.label} — {nextWorkout.sessionName}</p>
+            </div>
+            <Button
+              onClick={() => startNextWorkoutMutation.mutate()}
+              loading={startNextWorkoutMutation.isPending}
+            >
+              <Play className="w-4 h-4" /> Start next workout
+            </Button>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Recent workouts */}
       <Card>
