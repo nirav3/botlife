@@ -12,6 +12,7 @@ import workoutRoutes from './routes/workout.routes';
 import mealRoutes from './routes/meal.routes';
 import progressionRoutes from './routes/progression.routes';
 import plansRoutes from './routes/plans.routes';
+import chatRoutes from './routes/chat.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { notFound } from './middleware/notFound.middleware';
 import { swaggerSpec } from './lib/swagger';
@@ -61,6 +62,9 @@ const authLimiter = rateLimit({
   message: { error: 'Too many authentication attempts, please try again later.' },
 });
 
+// Chat has its own per-user rate limiter, applied inside chat.routes.ts
+// (after auth, so it can key on req.user.id instead of IP).
+
 // ─── Parsing ──────────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -102,6 +106,7 @@ app.use('/api/workouts', workoutRoutes);
 app.use('/api/meals', mealRoutes);
 app.use('/api/progression', progressionRoutes);
 app.use('/api/plans', plansRoutes);
+app.use('/api/chat', chatRoutes);
 
 // ─── SPA fallback — must come after API routes and before error handler ───────
 // Any non-API route that doesn't match a static file serves index.html

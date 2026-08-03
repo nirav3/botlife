@@ -2,7 +2,15 @@ import { Router } from 'express';
 import { body, param } from 'express-validator';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
-import { listPlans, getPlan, createPlan, updatePlan, deletePlan, startPlanDay } from '../controllers/plans.controller';
+import {
+  listPlans,
+  getPlan,
+  createPlan,
+  updatePlan,
+  deletePlan,
+  startPlanDay,
+  getNextWorkout,
+} from '../controllers/plans.controller';
 
 const router = Router();
 router.use(authenticate);
@@ -22,6 +30,11 @@ const dayValidation = [
 
 // GET /api/plans              — list plans visible to the user (samples + own)
 router.get('/', listPlans);
+
+// GET /api/plans/next-workout — the next day of whichever plan the user last
+// started a session from (for the dashboard "continue plan" shortcut).
+// Must be registered before /:planId so it isn't swallowed as a planId.
+router.get('/next-workout', getNextWorkout);
 
 // GET /api/plans/:planId      — full plan with all days and exercises
 router.get(

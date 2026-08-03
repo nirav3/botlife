@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDefaultStartingWeightKg } from '@/lib/defaultWeight';
+import { getDefaultStartingWeightKg, isBodyweightExercise } from '@/lib/defaultWeight';
 
 function dobForAge(age: number): Date {
   const d = new Date();
@@ -82,5 +82,65 @@ describe('getDefaultStartingWeightKg: negative/edge cases', () => {
       bodyweightKg: 80,
     });
     expect(result).toBeCloseTo(80 * 0.8 * 1.0, 1); // same as explicit MALE, not the -20% female figure
+  });
+});
+
+describe('isBodyweightExercise', () => {
+  it.each([
+    'Pull-up', 'Pull Up', 'Pullups', 'Weighted Pull-ups',
+    'Chin-up', 'Chinups',
+    'Push-up', 'Pushups',
+    'Dips', 'Ring Dips', 'Bench Dips',
+    'Muscle-up', 'Muscleups',
+    'Inverted Row',
+    'TRX / Ring Row', 'TRX Row',
+    'Pistol Squat',
+  ])('positive: %s is recognized as a bodyweight exercise', (name) => {
+    expect(isBodyweightExercise(name)).toBe(true);
+  });
+
+  it.each(['Barbell Row', 'Lat Pulldown', 'Bench Press', 'Bicep Curl'])(
+    'negative: %s (loaded, not bodyweight) is not flagged',
+    (name) => {
+      expect(isBodyweightExercise(name)).toBe(false);
+    }
+  );
+
+  it('negative: no exercise name → false, not a crash', () => {
+    expect(isBodyweightExercise(null)).toBe(false);
+    expect(isBodyweightExercise(undefined)).toBe(false);
+  });
+});
+
+describe('getDefaultStartingWeightKg: bodyweight exercises', () => {
+  it('positive: Pull-ups (Back, would otherwise get 0.8x bodyweight) suggest 0 added weight instead', () => {
+    const result = getDefaultStartingWeightKg({
+      dateOfBirth: dobForAge(35),
+      sex: 'MALE',
+      muscleGroup: 'Back',
+      exerciseName: 'Pull-ups',
+      bodyweightKg: 80,
+    });
+    expect(result).toBe(0);
+  });
+
+  it('positive: bodyweight suggestion applies even without a logged bodyweight — you always start unloaded', () => {
+    const result = getDefaultStartingWeightKg({
+      muscleGroup: 'Back',
+      exerciseName: 'Chin-ups',
+      bodyweightKg: null,
+    });
+    expect(result).toBe(0);
+  });
+
+  it('negative: a loaded Back exercise (e.g. Barbell Row) still gets the 0.8x bodyweight estimate', () => {
+    const result = getDefaultStartingWeightKg({
+      dateOfBirth: dobForAge(35),
+      sex: 'MALE',
+      muscleGroup: 'Back',
+      exerciseName: 'Barbell Row',
+      bodyweightKg: 80,
+    });
+    expect(result).toBeCloseTo(80 * 0.8 * 1.0, 1);
   });
 });

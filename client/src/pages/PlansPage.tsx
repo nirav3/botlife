@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Timer, Play, ClipboardList, Search, Upload } from 'lucide-react';
+import { Calendar, Timer, Play, ClipboardList, Search, Upload, Sparkles } from 'lucide-react';
 import { plansApi } from '@/api/plans';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
@@ -295,6 +295,9 @@ export default function PlansPage() {
           />
           <Button size="sm" variant="secondary" onClick={() => setShowImportHelp(true)}>
             <Upload className="w-4 h-4" /> Import
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => navigate('/plans/ai')}>
+            <Sparkles className="w-4 h-4" /> Create with AI
           </Button>
           <Button size="sm" onClick={() => navigate('/plans/new')}>
             + Create Plan

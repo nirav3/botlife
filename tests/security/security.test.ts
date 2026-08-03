@@ -32,6 +32,7 @@ describe('SECURITY: every protected route rejects requests with no token', () =>
     ['patch', '/api/plans/some-id'],
     ['delete', '/api/plans/some-id'],
     ['post', '/api/plans/some-id/start-day'],
+    ['post', '/api/chat/workout-plan'],
   ];
 
   it.each(protectedRoutes)('%s %s → 401 with no Authorization header', async (method, path) => {

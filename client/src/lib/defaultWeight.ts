@@ -21,6 +21,27 @@ const BASE_MULTIPLIER: Record<'core' | 'isolation', number> = {
 };
 const FEMALE_ADJUSTMENT = 0.8; // -20%
 
+// True bodyweight movements — you have to move your own bodyweight before
+// any added load makes sense, so "0.8× bodyweight" (meant for loaded lifts
+// like barbell rows) is the wrong starting suggestion here. Matched by name
+// since there's no exercise catalog / loadType flag in the data model yet.
+const BODYWEIGHT_EXERCISE_KEYWORDS = [
+  'pull-up', 'pull up', 'pullup',
+  'chin-up', 'chin up', 'chinup',
+  'push-up', 'push up', 'pushup',
+  'dip', // covers "Dips", "Ring Dips", "Bench Dips", etc.
+  'muscle-up', 'muscle up', 'muscleup',
+  'inverted row',
+  'ring row', 'trx row', // TRX/ring rows — you lean back and pull your own bodyweight
+  'pistol squat',
+];
+
+export function isBodyweightExercise(exerciseName?: string | null): boolean {
+  if (!exerciseName) return false;
+  const name = exerciseName.toLowerCase();
+  return BODYWEIGHT_EXERCISE_KEYWORDS.some((kw) => name.includes(kw));
+}
+
 // Age brackets, anchored so 30–39 (the original reference age) is 1.0 —
 // i.e. no adjustment. Deliberately coarse; this is a rough starting nudge,
 // not a fitness-science model.
@@ -55,6 +76,7 @@ export interface DefaultWeightInput {
   dateOfBirth?: string | Date | null;
   sex?: Sex | null;
   muscleGroup?: string | null;
+  exerciseName?: string | null;
   bodyweightKg?: number | null;
 }
 
@@ -62,14 +84,18 @@ export interface DefaultWeightInput {
  * Returns a rough starting-weight suggestion in kg, or null when there isn't
  * enough info to make one (no bodyweight logged yet, or the muscle group
  * doesn't map to a known category) — callers should fall back to a generic
- * placeholder in that case.
+ * placeholder in that case. For a true bodyweight exercise (pull-ups, dips,
+ * push-ups...) this returns 0 — start with just bodyweight, no added load.
  */
 export function getDefaultStartingWeightKg({
   dateOfBirth,
   sex,
   muscleGroup,
+  exerciseName,
   bodyweightKg,
 }: DefaultWeightInput): number | null {
+  if (isBodyweightExercise(exerciseName)) return 0;
+
   if (!bodyweightKg || bodyweightKg <= 0) return null;
   if (!muscleGroup) return null;
 

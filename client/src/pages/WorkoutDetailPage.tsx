@@ -9,7 +9,7 @@ import { progressionApi } from '@/api/progression';
 import { weightApi } from '@/api/weight';
 import { useUnits } from '@/hooks/useUnits';
 import { useAuth } from '@/hooks/useAuth';
-import { getDefaultStartingWeightKg } from '@/lib/defaultWeight';
+import { getDefaultStartingWeightKg, isBodyweightExercise } from '@/lib/defaultWeight';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -89,17 +89,30 @@ function EditableCell({ value, placeholder, inputType = 'number', step = 'any', 
 function ProgressionBadge({
   suggestion,
   estimatedWeightKg,
+  isBodyweight,
   units,
 }: {
   suggestion: ProgressionSuggestion | undefined;
   /** No logged history yet — a rough bodyweight/age/sex-based starting-point guess. */
   estimatedWeightKg?: number | null;
+  /** True bodyweight movement (pull-ups, dips...) — no added-weight estimate applies. */
+  isBodyweight?: boolean;
   units: ReturnType<typeof useUnits>;
 }) {
   const decimals = units.isImperial ? 0 : 1;
 
   if (!suggestion) {
     if (estimatedWeightKg == null) return null;
+    if (isBodyweight && estimatedWeightKg === 0) {
+      return (
+        <span
+          className="inline-flex items-center gap-1 text-xs bg-surface-2 text-muted border border-line px-2 py-0.5 rounded-full"
+          title="Bodyweight exercise — start with just your bodyweight, add extra load once it feels easy"
+        >
+          Estimated start: bodyweight only
+        </span>
+      );
+    }
     const estimated = units.kgToDisplay(units.roundSuggestedWeightKg(estimatedWeightKg));
     return (
       <span
@@ -220,6 +233,7 @@ function ExerciseCard({
   const setsWithTargets = log.sets as ExerciseSetWithTarget[];
   const hasTargets = setsWithTargets.some((s) => s.targetReps);
   const hasStarted = log.sets.some((s) => s.weightKg != null || s.reps != null || s.durationSecs != null);
+  const isBodyweight = isBodyweightExercise(log.exerciseName);
 
   // Suggested weight display value (for the column header hint) — rounded
   // to the nearest 5lb-equivalent so it's a practical number to load up.
@@ -244,13 +258,17 @@ function ExerciseCard({
         dateOfBirth: user?.dateOfBirth,
         sex: user?.sex,
         muscleGroup: log.muscleGroup,
+        exerciseName: log.exerciseName,
         bodyweightKg: weightStats?.current,
       })
     : null;
 
   const suggestedWeightKg = progressionWeightKg ?? fallbackWeightKg;
+  // Bodyweight fallback (0 = no added load suggested yet) reads as "BW", not "0 kg".
   const suggestedWeightPlaceholder = suggestedWeightKg != null
-    ? units.kgToDisplay(units.roundSuggestedWeightKg(suggestedWeightKg)).toFixed(units.isImperial ? 0 : 1)
+    ? (isBodyweight && suggestedWeightKg === 0 && progressionWeightKg == null
+        ? 'BW'
+        : units.kgToDisplay(units.roundSuggestedWeightKg(suggestedWeightKg)).toFixed(units.isImperial ? 0 : 1))
     : null;
   const suggestedRepsPlaceholder = suggestion?.readyForProgression
     ? suggestion.suggestedReps
@@ -262,7 +280,9 @@ function ExerciseCard({
   const firstWorkingSet = [...log.sets].sort((a, b) => a.setNumber - b.setNumber).find((s) => !s.isWarmup);
   const warmupReferenceWeightKg = firstWorkingSet?.weightKg ?? suggestedWeightKg;
   const warmupWeightPlaceholder = warmupReferenceWeightKg != null
-    ? units.kgToDisplay(units.roundSuggestedWeightKg(warmupReferenceWeightKg * 0.6)).toFixed(units.isImperial ? 0 : 1)
+    ? (isBodyweight && warmupReferenceWeightKg === 0 && progressionWeightKg == null
+        ? 'BW'
+        : units.kgToDisplay(units.roundSuggestedWeightKg(warmupReferenceWeightKg * 0.6)).toFixed(units.isImperial ? 0 : 1))
     : null;
 
   return (
@@ -272,7 +292,7 @@ function ExerciseCard({
           <div className="space-y-1">
             <h2 className="font-semibold text-ink">{log.exerciseName}</h2>
             {log.muscleGroup && <p className="text-xs text-muted">{log.muscleGroup}</p>}
-            <ProgressionBadge suggestion={suggestion} estimatedWeightKg={fallbackWeightKg} units={units} />
+            <ProgressionBadge suggestion={suggestion} estimatedWeightKg={fallbackWeightKg} isBodyweight={isBodyweight} units={units} />
           </div>
           <div className="flex gap-2 shrink-0">
             {!hasStarted && (
@@ -352,7 +372,7 @@ function ExerciseCard({
               {/* Editable weight */}
               <EditableCell
                 value={weightDisplay}
-                placeholder={`${weightPlaceholder} ${units.weightUnit}`}
+                placeholder={weightPlaceholder === 'BW' ? 'BW' : `${weightPlaceholder} ${units.weightUnit}`}
                 step={units.weightInputStep}
                 onSave={(raw) => handleWeightSave(set.id, raw)}
               />
