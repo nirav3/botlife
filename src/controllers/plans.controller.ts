@@ -16,28 +16,31 @@ function visibleToUser(userId: string) {
   };
 }
 
-interface PlanSetInput {
+// Exported so other layers (e.g. the AI chat service) that produce a plan
+// shape for the client to prefill/save can reuse the same interfaces instead
+// of redefining them.
+export interface PlanSetInput {
   setNumber: number;
   targetReps: string;
   rpe?: number;
   isWarmup?: boolean;
 }
 
-interface PlanExerciseInput {
+export interface PlanExerciseInput {
   name: string;
   muscleGroup: string;
   notes?: string;
   sets: PlanSetInput[];
 }
 
-interface PlanDayInput {
+export interface PlanDayInput {
   dayNumber: number;
   label: string;
   sessionName: string;
   exercises: PlanExerciseInput[];
 }
 
-interface PlanMetaInput {
+export interface PlanMetaInput {
   name?: string;
   description?: string;
   difficulty?: string;
@@ -77,10 +80,68 @@ const planDetailInclude = {
     include: {
       exercises: {
         orderBy: { orderIndex: 'asc' as const },
-        include: { sets: { orderBy: { setNumber: 'asc' as const } } },
+        include: {
+          sets: { orderBy: [{ isWarmup: 'desc' as const }, { setNumber: 'asc' as const }] },
+        },
       },
     },
   },
+};
+
+// ─── Next workout — the next unstarted day in whichever plan the user most
+// recently started a session from, so the dashboard can offer a one-click
+// "continue plan" shortcut instead of making them go back to Plans and pick
+// a day by hand every time. ─────────────────────────────────────────────────
+export const getNextWorkout = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+
+    const lastPlanSession = await prisma.workoutSession.findFirst({
+      where: { userId, planId: { not: null } },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    if (!lastPlanSession || !lastPlanSession.planId) {
+      res.json({ data: null });
+      return;
+    }
+
+    const plan = await prisma.workoutPlan.findFirst({
+      where: { id: lastPlanSession.planId, ...visibleToUser(userId) },
+      include: {
+        days: {
+          orderBy: { dayNumber: 'asc' },
+          select: { dayNumber: true, label: true, sessionName: true },
+        },
+      },
+    });
+
+    // Plan may have since been deleted, or a user-owned plan no longer
+    // visible — nothing sensible to suggest.
+    if (!plan || plan.days.length === 0) {
+      res.json({ data: null });
+      return;
+    }
+
+    const currentIndex = plan.days.findIndex((d) => d.dayNumber === lastPlanSession.dayNumber);
+    const nextDay = currentIndex === -1 ? plan.days[0] : plan.days[(currentIndex + 1) % plan.days.length];
+
+    res.json({
+      data: {
+        planId: plan.id,
+        planName: plan.name,
+        dayNumber: nextDay.dayNumber,
+        label: nextDay.label,
+        sessionName: nextDay.sessionName,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ─── List plans visible to the user (summary — no days/exercises) ────────────
@@ -258,7 +319,7 @@ export const startPlanDay = async (
       include: {
         exercises: {
           orderBy: { orderIndex: 'asc' },
-          include: { sets: { orderBy: { setNumber: 'asc' } } },
+          include: { sets: { orderBy: [{ isWarmup: 'desc' }, { setNumber: 'asc' }] } },
         },
       },
     });
@@ -270,6 +331,8 @@ export const startPlanDay = async (
         userId,
         name: planDay.sessionName,
         notes: `From plan: ${plan.name} — ${planDay.label}`,
+        planId: plan.id,
+        dayNumber: planDay.dayNumber,
         exerciseLogs: {
           create: planDay.exercises.map((ex, exIndex) => ({
             exerciseName: ex.name,
@@ -289,7 +352,7 @@ export const startPlanDay = async (
       },
       include: {
         exerciseLogs: {
-          include: { sets: { orderBy: { setNumber: 'asc' } } },
+          include: { sets: { orderBy: [{ isWarmup: 'desc' }, { setNumber: 'asc' }] } },
           orderBy: { orderIndex: 'asc' },
         },
       },

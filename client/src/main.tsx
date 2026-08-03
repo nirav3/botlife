@@ -21,6 +21,7 @@ import WeightPage from '@/pages/WeightPage';
 import ProgressionPage from '@/pages/ProgressionPage';
 import PlansPage from '@/pages/PlansPage';
 import PlanBuilderPage from '@/pages/PlanBuilderPage';
+import ChatPlanPage from '@/pages/ChatPlanPage';
 
 import './index.css';
 
@@ -81,6 +82,7 @@ function App() {
             <Route path="weight" element={<WeightPage />} />
             <Route path="progression" element={<ProgressionPage />} />
             <Route path="plans" element={<PlansPage />} />
+            <Route path="plans/ai" element={<ChatPlanPage />} />
             <Route path="plans/new" element={<PlanBuilderPage />} />
             <Route path="plans/:id/edit" element={<PlanBuilderPage />} />
           </Route>

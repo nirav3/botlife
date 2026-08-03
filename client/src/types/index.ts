@@ -69,6 +69,8 @@ export interface WorkoutSession {
   userId: string;
   name: string;
   notes: string | null;
+  planId: string | null;
+  dayNumber: number | null;
   startedAt: string;
   endedAt: string | null;
   exerciseLogs: ExerciseLog[];
@@ -135,6 +137,16 @@ export interface WorkoutPlanSummary {
 
 export interface WorkoutPlan extends WorkoutPlanSummary {
   days: PlanDay[];
+}
+
+// The next day to do in whichever plan the user last started a session
+// from — null when they haven't started any plan session yet.
+export interface NextWorkout {
+  planId: string;
+  planName: string;
+  dayNumber: number;
+  label: string;
+  sessionName: string;
 }
 
 // Input shape for create/update — no id/ownerId, freshly authored by the user

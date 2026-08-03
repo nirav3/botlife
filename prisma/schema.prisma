@@ -73,12 +73,18 @@ model WorkoutSession {
   userId    String
   name      String                      // e.g. "Push Day", "Leg Day"
   notes     String?
+  // Set only when this session was started from a plan (see startPlanDay) —
+  // lets the dashboard find "what's the next workout in my active plan"
+  // without parsing the free-text notes field. Null for freeform sessions.
+  planId    String?
+  dayNumber Int?
   startedAt DateTime  @default(now())
   endedAt   DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan         WorkoutPlan?  @relation(fields: [planId], references: [id], onDelete: SetNull)
   exerciseLogs ExerciseLog[]
 
   @@map("workout_sessions")
@@ -134,8 +140,9 @@ model WorkoutPlan {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  owner User?     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  days  PlanDay[]
+  owner    User?            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  days     PlanDay[]
+  sessions WorkoutSession[]
 
   @@map("workout_plans")
 }

@@ -1,9 +1,12 @@
 import { apiClient } from './client';
-import type { WorkoutPlan, WorkoutPlanSummary, WorkoutPlanInput, WorkoutSession } from '@/types';
+import type { WorkoutPlan, WorkoutPlanSummary, WorkoutPlanInput, WorkoutSession, NextWorkout } from '@/types';
 
 export const plansApi = {
   list: () =>
     apiClient.get<{ data: WorkoutPlanSummary[] }>('/plans').then((r) => r.data.data),
+
+  nextWorkout: () =>
+    apiClient.get<{ data: NextWorkout | null }>('/plans/next-workout').then((r) => r.data.data),
 
   get: (planId: string) =>
     apiClient.get<{ data: WorkoutPlan }>(`/plans/${planId}`).then((r) => r.data.data),

@@ -99,7 +99,7 @@ export const getSession = async (
       where: { id: sessionId },
       include: {
         exerciseLogs: {
-          include: { sets: { orderBy: { setNumber: 'asc' } } },
+          include: { sets: { orderBy: [{ isWarmup: 'desc' }, { setNumber: 'asc' }] } },
           orderBy: { orderIndex: 'asc' },
         },
       },
@@ -236,8 +236,14 @@ export const swapExercise = async (
 
     const updated = await prisma.exerciseLog.update({
       where: { id: exerciseLogId },
-      data: { exerciseName: newName },
-      include: { sets: { orderBy: { setNumber: 'asc' } } },
+      // Clear notes — they were authored for the exercise being replaced
+      // (e.g. "add weight once bodyweight feels easy" on a Pull-ups log)
+      // and the substitute pool gives us no way to know what, if anything,
+      // applies to the new exercise. Stale notes are actively misleading
+      // (that Pull-ups note showing under a swapped-in Barbell Row, which
+      // needs weight from set 1) rather than just unhelpful.
+      data: { exerciseName: newName, notes: null },
+      include: { sets: { orderBy: [{ isWarmup: 'desc' }, { setNumber: 'asc' }] } },
     });
 
     res.json({ data: updated });

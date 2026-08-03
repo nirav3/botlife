@@ -294,6 +294,31 @@ describe('POST /api/workouts/:sessionId/exercises/:exerciseLogId/swap', () => {
     expect(res.body.data.exerciseName).toBe('Goblet Squat');
   });
 
+  it("positive: clears the old exercise's notes on swap — they were written for the exercise being replaced (e.g. a bodyweight-specific hint) and are actively misleading on the substitute", async () => {
+    (prisma.workoutSession.findUnique as jest.Mock).mockResolvedValue(sessionA);
+    (prisma.exerciseLog.findUnique as jest.Mock).mockResolvedValue({
+      ...logInSessionA,
+      exerciseName: 'Pull-ups',
+      notes: 'Add weight once bodyweight feels easy',
+    });
+    (getExerciseSubstitutes as jest.Mock).mockResolvedValue(['Barbell Row']);
+    (prisma.exerciseLog.update as jest.Mock).mockResolvedValue({
+      ...logInSessionA,
+      exerciseName: 'Barbell Row',
+      notes: null,
+    });
+
+    const res = await request(app)
+      .post(`/api/workouts/${sessionA.id}/exercises/${logInSessionA.id}/swap`)
+      .set('Authorization', authHeader(USER_A_ID));
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.notes).toBeNull();
+    expect(prisma.exerciseLog.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { exerciseName: 'Barbell Row', notes: null } })
+    );
+  });
+
   it('negative: rejects the request with no auth token', async () => {
     const res = await request(app).post(`/api/workouts/${sessionA.id}/exercises/${logInSessionA.id}/swap`);
     expect(res.status).toBe(401);
