@@ -1,36 +1,22 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
-import { Scale, Dumbbell, TrendingUp, Rocket, Play } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { Scale, Dumbbell, TrendingUp, Rocket } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnits } from '@/hooks/useUnits';
 import { weightApi } from '@/api/weight';
 import { workoutsApi } from '@/api/workouts';
 import { progressionApi } from '@/api/progression';
-import { plansApi } from '@/api/plans';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { format } from 'date-fns';
-import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const units = useUnits();
-  const navigate = useNavigate();
 
   const { data: weightStats } = useQuery({ queryKey: ['weight-stats'], queryFn: weightApi.stats });
   const { data: sessions } = useQuery({ queryKey: ['workouts', 1], queryFn: () => workoutsApi.list({ limit: 5 }) });
   const { data: progression } = useQuery({ queryKey: ['progression'], queryFn: () => progressionApi.all() });
-  const { data: nextWorkout } = useQuery({ queryKey: ['next-workout'], queryFn: plansApi.nextWorkout });
-
-  const startNextWorkoutMutation = useMutation({
-    mutationFn: () => plansApi.startDay(nextWorkout!.planId, nextWorkout!.dayNumber),
-    onSuccess: (session) => {
-      toast.success('Session started!');
-      navigate(`/workouts/${session.id}`);
-    },
-    onError: () => toast.error('Failed to start session'),
-  });
 
   const readyCount = progression?.ready.length ?? 0;
 
