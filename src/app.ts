@@ -13,6 +13,7 @@ import mealRoutes from './routes/meal.routes';
 import progressionRoutes from './routes/progression.routes';
 import plansRoutes from './routes/plans.routes';
 import chatRoutes from './routes/chat.routes';
+import exercisesRoutes from './routes/exercises.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { notFound } from './middleware/notFound.middleware';
 import { swaggerSpec } from './lib/swagger';
@@ -24,6 +25,7 @@ import './docs/workout.docs';
 import './docs/meal.docs';
 import './docs/progression.docs';
 import './docs/plans.docs';
+import './docs/exercises.docs';
 
 const app = express();
 
@@ -107,6 +109,7 @@ app.use('/api/meals', mealRoutes);
 app.use('/api/progression', progressionRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/exercises', exercisesRoutes);
 
 // ─── SPA fallback — must come after API routes and before error handler ───────
 // Any non-API route that doesn't match a static file serves index.html

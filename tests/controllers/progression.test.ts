@@ -7,12 +7,16 @@ import { authHeader, USER_A_ID } from '../utils/testHelpers';
 
 const readySuggestion = {
   exerciseName: 'Bench Press',
+  progressionType: 'weight',
   currentWeightKg: 60,
   suggestedWeightKg: 62.5,
   currentReps: 10,
   suggestedReps: 8,
   readyForProgression: true,
   reason: 'Time to increase!',
+  reasonKey: 'weight_ready',
+  reasonParams: { currentWeightKg: 60, currentReps: 10, incrementKg: 2.5, consecutiveSessions: 3 },
+  perSetSuggestions: [{ setNumber: 1, weightKg: 62.5, reps: 8 }],
 };
 
 const notReadySuggestion = {
