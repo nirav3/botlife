@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, FormEvent, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, useMemo, FormEvent, KeyboardEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -7,14 +7,17 @@ import { Pencil, Rocket, Shuffle, Lightbulb, X } from 'lucide-react';
 import { workoutsApi } from '@/api/workouts';
 import { progressionApi } from '@/api/progression';
 import { weightApi } from '@/api/weight';
+import { exercisesApi } from '@/api/exercises';
 import { useUnits } from '@/hooks/useUnits';
 import { useAuth } from '@/hooks/useAuth';
-import { getDefaultStartingWeightKg, isBodyweightExercise } from '@/lib/defaultWeight';
+import { getDefaultStartingWeightKg, isBodyweightExercise, isDumbbellExercise } from '@/lib/defaultWeight';
+import { rampFallbackWeightsKg } from '@/lib/perSetRamp';
+import { buildExerciseCatalogIndex, lookupExerciseCatalog } from '@/lib/exerciseCatalog';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import type { ExerciseLog, ExerciseSetWithTarget, ProgressionSuggestion } from '@/types';
+import type { ExerciseLog, ExerciseSetWithTarget, ProgressionSuggestion, ExerciseCatalogEntry } from '@/types';
 import toast from 'react-hot-toast';
 
 function extractErrorMessage(err: unknown, fallback: string): string {
@@ -90,6 +93,7 @@ function ProgressionBadge({
   suggestion,
   estimatedWeightKg,
   isBodyweight,
+  isBeginnerPlan,
   units,
 }: {
   suggestion: ProgressionSuggestion | undefined;
@@ -97,6 +101,8 @@ function ProgressionBadge({
   estimatedWeightKg?: number | null;
   /** True bodyweight movement (pull-ups, dips...) — no added-weight estimate applies. */
   isBodyweight?: boolean;
+  /** Session started from a Beginner-difficulty plan — the estimate above was already notched down for it. */
+  isBeginnerPlan?: boolean;
   units: ReturnType<typeof useUnits>;
 }) {
   const decimals = units.isImperial ? 0 : 1;
@@ -117,26 +123,47 @@ function ProgressionBadge({
     return (
       <span
         className="inline-flex items-center gap-1 text-xs bg-surface-2 text-muted border border-line px-2 py-0.5 rounded-full"
-        title="No logged history for this exercise yet — a rough starting point based on your profile"
+        title={
+          isBeginnerPlan
+            ? 'No logged history for this exercise yet — a rough starting point based on your profile, kept light since this is a Beginner plan'
+            : 'No logged history for this exercise yet — a rough starting point based on your profile'
+        }
       >
         Estimated start: ~{estimated.toFixed(decimals)} {units.weightUnit}
+        {isBeginnerPlan && <span className="ml-1 normal-case text-[10px]">(kept light)</span>}
       </span>
     );
   }
 
   const suggested = units.kgToDisplay(units.roundSuggestedWeightKg(suggestion.suggestedWeightKg));
 
+  // Sets ramp weight-up for 'weight' exercises, or hold weight flat and vary
+  // reps for 'reps' exercises — flagged so the per-set numbers below don't
+  // look inconsistent at a glance.
+  const styleHint = (
+    <span
+      className="text-[10px] text-muted normal-case"
+      title={
+        suggestion.progressionType === 'weight'
+          ? 'Working sets ramp up in weight toward this target; reps stay the same each set'
+          : 'Weight stays the same across sets; the rep target is what climbs over time'
+      }
+    >
+      {suggestion.progressionType === 'weight' ? 'ramping sets' : 'reps focus'}
+    </span>
+  );
+
   if (suggestion.readyForProgression) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs bg-surface-2 text-accent-violet border border-line px-2 py-0.5 rounded-full font-medium">
-        <Rocket className="w-3 h-3" /> Try {suggested.toFixed(decimals)} {units.weightUnit} today
+      <span className="inline-flex items-center gap-1.5 text-xs bg-surface-2 text-accent-violet border border-line px-2 py-0.5 rounded-full font-medium">
+        <Rocket className="w-3 h-3" /> Try {suggested.toFixed(decimals)} {units.weightUnit} today {styleHint}
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1 text-xs bg-surface-2 text-muted border border-line px-2 py-0.5 rounded-full">
-      Last: {units.formatWeight(suggestion.currentWeightKg)} × {suggestion.currentReps} reps
+    <span className="inline-flex items-center gap-1.5 text-xs bg-surface-2 text-muted border border-line px-2 py-0.5 rounded-full">
+      Last: {units.formatWeight(suggestion.currentWeightKg)} × {suggestion.currentReps} reps {styleHint}
     </span>
   );
 }
@@ -146,10 +173,13 @@ function ExerciseCard({
   log,
   sessionId,
   units,
+  planDifficulty,
 }: {
   log: ExerciseLog;
   sessionId: string;
   units: ReturnType<typeof useUnits>;
+  /** This session's plan.difficulty, if started from a plan — notches down the no-history weight estimate for Beginner plans. */
+  planDifficulty?: string | null;
 }) {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -172,6 +202,17 @@ function ExerciseCard({
   // cheap to fetch, and React Query dedupes this against the same call
   // already made elsewhere (Dashboard, Weight page) in the same session.
   const { data: weightStats } = useQuery({ queryKey: ['weight-stats'], queryFn: weightApi.stats });
+
+  // The catalog is small and effectively static — every ExerciseCard on the
+  // page shares this one fetch (React Query dedupes identical queryKeys),
+  // and a long staleTime means it's essentially free after the first load.
+  const { data: catalog } = useQuery({
+    queryKey: ['exercise-catalog'],
+    queryFn: exercisesApi.catalog,
+    staleTime: 30 * 60 * 1000,
+  });
+  const catalogIndex = useMemo(() => (catalog ? buildExerciseCatalogIndex(catalog) : undefined), [catalog]);
+  const catalogEntry: ExerciseCatalogEntry | null = lookupExerciseCatalog(catalogIndex, log.exerciseName);
 
   const updateSetMutation = useMutation({
     mutationFn: ({ setId, data }: { setId: string; data: { weightKg?: number; reps?: number } }) =>
@@ -233,7 +274,14 @@ function ExerciseCard({
   const setsWithTargets = log.sets as ExerciseSetWithTarget[];
   const hasTargets = setsWithTargets.some((s) => s.targetReps);
   const hasStarted = log.sets.some((s) => s.weightKg != null || s.reps != null || s.durationSecs != null);
-  const isBodyweight = isBodyweightExercise(log.exerciseName);
+  const isBodyweight = isBodyweightExercise(log.exerciseName, catalogEntry);
+  // Dumbbell weight is conventionally per dumbbell ("curling 20s" = 20 in
+  // each hand), not a combined total — flagged here so the UI can label it
+  // regardless of whether the number shown is our estimate or the real
+  // progression suggestion built from what the user already logged. Catalog
+  // match (when there is one) also correctly excludes e.g. swings/goblet
+  // squats, which use one dumbbell held two-handed, not one per side.
+  const isDumbbell = isDumbbellExercise(log.exerciseName, catalogEntry);
 
   // Suggested weight display value (for the column header hint) — rounded
   // to the nearest 5lb-equivalent so it's a practical number to load up.
@@ -252,7 +300,9 @@ function ExerciseCard({
   // after a swap) — fall back to a rough bodyweight/age/sex-based estimate
   // rather than one flat generic number for every exercise. Still falls
   // through to the old generic placeholder below if we don't have enough
-  // profile info to make even that estimate.
+  // profile info to make even that estimate. Notched further down for a
+  // Beginner-difficulty plan — starting too heavy is what discourages a
+  // first-timer, not starting a bit light.
   const fallbackWeightKg = progressionWeightKg == null
     ? getDefaultStartingWeightKg({
         dateOfBirth: user?.dateOfBirth,
@@ -260,6 +310,8 @@ function ExerciseCard({
         muscleGroup: log.muscleGroup,
         exerciseName: log.exerciseName,
         bodyweightKg: weightStats?.current,
+        planDifficulty,
+        catalogEntry,
       })
     : null;
 
@@ -285,6 +337,30 @@ function ExerciseCard({
         : units.kgToDisplay(units.roundSuggestedWeightKg(warmupReferenceWeightKg * 0.6)).toFixed(units.isImperial ? 0 : 1))
     : null;
 
+  // No real progression suggestion yet (brand-new exercise) — still ramp the
+  // rough starting-point estimate up across working sets rather than
+  // repeating one flat number on every row, same as exercises with history.
+  // Skipped for a true zero-load bodyweight estimate (ramping 0 is a no-op —
+  // every row already reads "BW").
+  const fallbackWorkingSetCount = setsWithTargets.filter((s) => !s.isWarmup).length;
+  const fallbackRampKg = progressionWeightKg == null && suggestedWeightKg != null && !(isBodyweight && suggestedWeightKg === 0)
+    ? rampFallbackWeightsKg(suggestedWeightKg, fallbackWorkingSetCount)
+    : null;
+  // Reps target for that same no-history case — held constant across sets
+  // while the weight above ramps, matching the 'weight'-type convention the
+  // progression engine uses once real history exists (see targetRepsPerSet
+  // in src/services/progression.service.ts). Without this, a brand-new
+  // exercise showed a numeric weight ramp but a bare "reps" placeholder,
+  // which read as broken/inconsistent.
+  const FALLBACK_REPS_TARGET = 8;
+  const fallbackRepsTarget = fallbackRampKg ? FALLBACK_REPS_TARGET : null;
+
+  // Running counter of working (non-warmup) sets seen so far while rendering
+  // the table below — used to pull each set's own entry out of
+  // perSetSuggestions/fallbackRampKg instead of repeating one flat number
+  // on every row.
+  let workingSetIndex = 0;
+
   return (
     <Card>
       <CardHeader>
@@ -292,7 +368,15 @@ function ExerciseCard({
           <div className="space-y-1">
             <h2 className="font-semibold text-ink">{log.exerciseName}</h2>
             {log.muscleGroup && <p className="text-xs text-muted">{log.muscleGroup}</p>}
-            <ProgressionBadge suggestion={suggestion} estimatedWeightKg={fallbackWeightKg} isBodyweight={isBodyweight} units={units} />
+            {isDumbbell && (
+              <span
+                className="inline-flex items-center gap-1 text-xs bg-surface-2 text-muted border border-line px-2 py-0.5 rounded-full"
+                title="Every weight shown or logged for this exercise is per dumbbell — the number you'd hold in each hand, not the combined total"
+              >
+                ⚖️ Weight is per dumbbell
+              </span>
+            )}
+            <ProgressionBadge suggestion={suggestion} estimatedWeightKg={fallbackWeightKg} isBodyweight={isBodyweight} isBeginnerPlan={planDifficulty?.toLowerCase() === 'beginner'} units={units} />
           </div>
           <div className="flex gap-2 shrink-0">
             {!hasStarted && (
@@ -350,14 +434,45 @@ function ExerciseCard({
 
           const repsDisplay = set.reps != null ? String(set.reps) : '';
 
-          // Working sets get the progression-engine suggestion as their
-          // placeholder; warmups get 60% of the first working set's weight.
+          // This set's own entry from the progression engine's per-set ramp
+          // (weight-type exercises ramp weight up across sets; reps-type
+          // exercises hold weight flat and taper the rep target instead).
+          // Extra sets beyond the suggested count reuse the last entry.
+          if (!set.isWarmup) workingSetIndex += 1;
+          const perSetSuggestion = !set.isWarmup && suggestion?.perSetSuggestions.length
+            ? suggestion.perSetSuggestions[
+                Math.min(workingSetIndex, suggestion.perSetSuggestions.length) - 1
+              ]
+            : null;
+
+          // This set's own entry from the fallback ramp — same idea as
+          // perSetSuggestion above, for a brand-new exercise with no real
+          // progression suggestion yet.
+          const fallbackRampWeightKg = !set.isWarmup && fallbackRampKg?.length
+            ? fallbackRampKg[Math.min(workingSetIndex, fallbackRampKg.length) - 1]
+            : null;
+
+          // Working sets get the progression-engine's per-set suggestion as
+          // their placeholder (or the ramped fallback estimate if there's no
+          // real suggestion yet); warmups get 60% of the first working set's weight.
           const weightPlaceholder = set.isWarmup
             ? warmupWeightPlaceholder ?? units.weightPlaceholder
-            : suggestedWeightPlaceholder ?? units.weightPlaceholder;
-          const repsPlaceholder = !set.isWarmup && suggestedRepsPlaceholder != null
-            ? String(suggestedRepsPlaceholder)
-            : 'reps';
+            : perSetSuggestion
+              ? (isBodyweight && perSetSuggestion.weightKg === 0
+                  ? 'BW'
+                  : units.kgToDisplay(units.roundSuggestedWeightKg(perSetSuggestion.weightKg)).toFixed(units.isImperial ? 0 : 1))
+              : fallbackRampWeightKg != null
+                ? units.kgToDisplay(units.roundSuggestedWeightKg(fallbackRampWeightKg)).toFixed(units.isImperial ? 0 : 1)
+                : suggestedWeightPlaceholder ?? units.weightPlaceholder;
+          const repsPlaceholder = set.isWarmup
+            ? 'reps'
+            : perSetSuggestion
+              ? String(perSetSuggestion.reps)
+              : suggestedRepsPlaceholder != null
+                ? String(suggestedRepsPlaceholder)
+                : fallbackRepsTarget != null
+                  ? String(fallbackRepsTarget)
+                  : 'reps';
 
           return (
             <div
@@ -554,7 +669,7 @@ export default function WorkoutDetailPage() {
 
       {/* Exercise cards — each manages its own state and mutations */}
       {session.exerciseLogs.map((log: ExerciseLog) => (
-        <ExerciseCard key={log.id} log={log} sessionId={id!} units={units} />
+        <ExerciseCard key={log.id} log={log} sessionId={id!} units={units} planDifficulty={session.plan?.difficulty} />
       ))}
 
       <Button variant="secondary" className="w-full" onClick={() => setAddExModal(true)}>

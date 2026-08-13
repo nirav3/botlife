@@ -74,23 +74,88 @@ export interface WorkoutSession {
   startedAt: string;
   endedAt: string | null;
   exerciseLogs: ExerciseLog[];
+  /**
+   * Only populated by GET /api/workouts/:id (the single-session detail
+   * fetch) — used to notch down the no-history starting-weight estimate for
+   * Beginner plans. Undefined on the list/create/update endpoints, which
+   * don't join the plan; treat missing the same as null (no plan / unknown).
+   */
+  plan?: { difficulty: string | null } | null;
 }
 
 // ── Progression ───────────────────────────────────────────────────────────────
+export type ProgressionType = 'weight' | 'reps';
+
+export type ProgressionReasonKey =
+  | 'weight_ready'
+  | 'weight_hold'
+  | 'weight_working'
+  | 'reps_ready'
+  | 'reps_ready_bodyweight'
+  | 'reps_hold'
+  | 'reps_working';
+
+export interface ProgressionReasonParams {
+  currentWeightKg: number;
+  currentReps: number;
+  incrementKg?: number;
+  consecutiveSessions?: number;
+  sessionsNeeded?: number;
+  repsThreshold?: number;
+  nextRepTarget?: number;
+}
+
+export interface SetSuggestion {
+  setNumber: number;
+  weightKg: number;
+  reps: number;
+}
+
 export interface ProgressionSuggestion {
   exerciseName: string;
+  progressionType: ProgressionType;
   currentWeightKg: number;
   suggestedWeightKg: number;
   currentReps: number;
   suggestedReps: number | null;
   readyForProgression: boolean;
+  /** kg-denominated plain-English text — prefer reasonKey/reasonParams in the UI, see progressionReason.ts */
   reason: string;
+  reasonKey: ProgressionReasonKey;
+  reasonParams: ProgressionReasonParams;
+  perSetSuggestions: SetSuggestion[];
 }
 
 export interface ProgressionOverview {
   ready: ProgressionSuggestion[];
   inProgress: ProgressionSuggestion[];
   total: number;
+}
+
+// ── Exercise Catalog ─────────────────────────────────────────────────────────
+export type ExerciseBodyRegion = 'UPPER' | 'LOWER' | 'FULL_BODY';
+export type ExerciseMovementPattern = 'COMPOUND' | 'ISOLATION';
+export type ExerciseEquipment =
+  | 'BARBELL' | 'DUMBBELL' | 'MACHINE' | 'CABLE' | 'KETTLEBELL' | 'BODYWEIGHT' | 'BAND' | 'OTHER';
+export type ExerciseLoadConvention =
+  | 'TOTAL' | 'PER_SIDE' | 'BODYWEIGHT' | 'BODYWEIGHT_LOADABLE' | 'TIME';
+export type ExerciseProgressionType = 'WEIGHT' | 'REPS';
+
+/**
+ * Structured facts about a known exercise — not exhaustive, an exercise
+ * with no matching catalog row just falls back to keyword-based
+ * classification (see client/src/lib/defaultWeight.ts).
+ */
+export interface ExerciseCatalogEntry {
+  id: string;
+  name: string;
+  aliases: string[];
+  muscleGroup: string;
+  bodyRegion: ExerciseBodyRegion;
+  movementPattern: ExerciseMovementPattern;
+  equipment: ExerciseEquipment;
+  loadConvention: ExerciseLoadConvention;
+  progressionType: ExerciseProgressionType | null;
 }
 
 export interface ExerciseHistory {

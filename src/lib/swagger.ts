@@ -99,6 +99,14 @@ const options: swaggerJsdoc.Options = {
               type: 'array',
               items: { $ref: '#/components/schemas/ExerciseLog' },
             },
+            plan: {
+              type: 'object',
+              nullable: true,
+              description: 'Present only when this session was started from a plan. Only difficulty is included here (used to notch down the no-history starting-weight estimate) — fetch /api/plans/{id} for the full plan.',
+              properties: {
+                difficulty: { type: 'string', nullable: true, example: 'Beginner' },
+              },
+            },
           },
         },
         ExerciseLog: {
@@ -200,6 +208,12 @@ const options: swaggerJsdoc.Options = {
           type: 'object',
           properties: {
             exerciseName: { type: 'string', example: 'Bench Press' },
+            progressionType: {
+              type: 'string',
+              enum: ['weight', 'reps'],
+              example: 'weight',
+              description: "'weight' exercises progress by adding load (reps held constant); 'reps' exercises progress by adding reps (weight held constant) until a rep ceiling triggers a small load increase.",
+            },
             currentWeightKg: { type: 'number', example: 83.9 },
             suggestedWeightKg: { type: 'number', example: 86.4 },
             currentReps: { type: 'integer', example: 10 },
@@ -208,6 +222,38 @@ const options: swaggerJsdoc.Options = {
             reason: {
               type: 'string',
               example: "You've hit 3 sessions at 83.9kg averaging 10 reps. Time to increase by 2.5kg!",
+              description: 'Always kg-denominated plain English, regardless of the user\'s unit preference — for API consumers that don\'t do their own unit conversion. UI clients should build their own copy from reasonKey + reasonParams instead.',
+            },
+            reasonKey: {
+              type: 'string',
+              enum: ['weight_ready', 'weight_hold', 'weight_working', 'reps_ready', 'reps_ready_bodyweight', 'reps_hold', 'reps_working'],
+              example: 'weight_ready',
+              description: 'Which reason template applies — pair with reasonParams to render the sentence in the user\'s own lb/kg preference.',
+            },
+            reasonParams: {
+              type: 'object',
+              description: 'Raw numbers (weights in kg) behind `reason` / `reasonKey`, for unit-aware rendering.',
+              properties: {
+                currentWeightKg: { type: 'number', example: 83.9 },
+                currentReps: { type: 'number', example: 10 },
+                incrementKg: { type: 'number', nullable: true, example: 2.5 },
+                consecutiveSessions: { type: 'integer', nullable: true, example: 3 },
+                sessionsNeeded: { type: 'integer', nullable: true, example: 2 },
+                repsThreshold: { type: 'integer', nullable: true, example: 10 },
+                nextRepTarget: { type: 'integer', nullable: true, example: 12 },
+              },
+            },
+            perSetSuggestions: {
+              type: 'array',
+              description: 'Per-set weight/reps targets for today — not the same flat number repeated on every set.',
+              items: {
+                type: 'object',
+                properties: {
+                  setNumber: { type: 'integer', example: 1 },
+                  weightKg: { type: 'number', example: 80.5 },
+                  reps: { type: 'integer', example: 8 },
+                },
+              },
             },
           },
         },
@@ -233,6 +279,26 @@ const options: swaggerJsdoc.Options = {
             totalReps: { type: 'integer', example: 30 },
             avgRepsPerSet: { type: 'number', example: 10.0 },
             sets: { type: 'integer', example: 3 },
+          },
+        },
+        // ── Exercise Catalog ────────────────────────────────────────────────
+        ExerciseCatalogEntry: {
+          type: 'object',
+          description: 'Structured facts about a known exercise. Not exhaustive — an exercise name with no matching row here isn\'t an error, it just falls back to keyword-based classification.',
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string', example: 'Dumbbell Curl' },
+            aliases: { type: 'array', items: { type: 'string' }, example: ['Dumbbell Bicep Curl', 'DB Curl', 'Bicep Curl'] },
+            muscleGroup: { type: 'string', example: 'Biceps' },
+            bodyRegion: { type: 'string', enum: ['UPPER', 'LOWER', 'FULL_BODY'] },
+            movementPattern: { type: 'string', enum: ['COMPOUND', 'ISOLATION'] },
+            equipment: { type: 'string', enum: ['BARBELL', 'DUMBBELL', 'MACHINE', 'CABLE', 'KETTLEBELL', 'BODYWEIGHT', 'BAND', 'OTHER'] },
+            loadConvention: {
+              type: 'string',
+              enum: ['TOTAL', 'PER_SIDE', 'BODYWEIGHT', 'BODYWEIGHT_LOADABLE', 'TIME'],
+              description: 'How to read the one weightKg number — TOTAL (whole load), PER_SIDE (what\'s held in each hand — not every dumbbell exercise, e.g. swings/goblet squats are TOTAL), BODYWEIGHT, BODYWEIGHT_LOADABLE, or TIME (duration-based, e.g. planks).',
+            },
+            progressionType: { type: 'string', enum: ['WEIGHT', 'REPS'], nullable: true },
           },
         },
         // ── Shared ──────────────────────────────────────────────────────────

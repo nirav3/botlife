@@ -7,6 +7,7 @@ import { weightApi } from '@/api/weight';
 import { workoutsApi } from '@/api/workouts';
 import { progressionApi } from '@/api/progression';
 import { plansApi } from '@/api/plans';
+import { formatProgressionReason } from '@/lib/progressionReason';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -145,7 +146,7 @@ export default function DashboardPage() {
               <div key={s.exerciseName} className="flex items-center justify-between px-6 py-3 border-b last:border-b-0 border-line">
                 <div>
                   <p className="text-sm font-semibold text-ink">{s.exerciseName}</p>
-                  <p className="text-xs text-muted">{s.reason.replace(/(\d+(?:\.\d+)?)\s*kg/g, (_m: string, v: string) => `${units.kgToDisplay(parseFloat(v)).toFixed(units.isImperial ? 0 : 1)} ${units.weightUnit}`)}</p>
+                  <p className="text-xs text-muted">{formatProgressionReason(s.reasonKey, s.reasonParams, units)}</p>
                 </div>
                 <div className="text-right shrink-0 ml-4">
                   <p className="text-xs text-muted line-through">{units.formatWeight(s.currentWeightKg)}</p>

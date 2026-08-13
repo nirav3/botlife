@@ -96,12 +96,18 @@ The API will be available at `http://localhost:3000`.
 
 ## Progressive Overload Logic
 
-The engine analyzes working sets (non-warmup) and suggests increases based on:
+The engine analyzes working sets (non-warmup) and first classifies each exercise by name into one of two progression styles:
 
-- **Consecutive sessions** at the same weight: requires 3 sessions before suggesting increase
-- **Avg reps threshold**: must average ≥ 10 reps per set to qualify
-- **Increments**: +2.5kg for upper body, +5kg for lower body (squat, deadlift, etc.)
+- **Weight-type** (squats, deadlifts, bench, rows, presses…) — weight goes up, reps stay fixed.
+  - Requires 3 consecutive sessions at the same weight averaging ≥ 10 reps/set before suggesting an increase.
+  - Increment: +2.5kg for upper body, +5kg for lower body (squat, deadlift, etc.).
+  - Example: Bench Press at 83.9kg (185lbs) averaged 10+ reps for 3 sessions → API suggests moving to 86.4kg (190lbs), reps target reset to 8.
+- **Reps-type** (pull-ups, push-ups, dips, curls, cable/isolation work…) — reps go up, weight stays fixed.
+  - Weight is held constant while the rep target climbs by 2 each session, until avg reps reach a ceiling of 15 for 3 consecutive sessions.
+  - Only then does it suggest a (smaller) weight bump — +1.25kg for upper body, +2.5kg for lower body, or "add extra load" for true bodyweight moves with no weight logged — and reset the rep target back down to 8.
 
-Example: Bench Press at 83.9kg (185lbs) averaged 10+ reps for 3 sessions → API suggests moving to 86.4kg (190lbs).
+Either way, the suggestion also includes a **per-set breakdown for today** (`perSetSuggestions`) instead of one flat number repeated on every row:
+- Weight-type: working sets ramp up (~7%/set, floored at 70% of target) to the full target weight on the final set, reps constant.
+- Reps-type: weight is identical across all sets, but the rep target tapers slightly across sets (higher on the fresh first set, lower by the last) around the target rep count.
 
 The `/api/progression` endpoint returns two buckets: `ready` (increase now) and `inProgress` (keep going).

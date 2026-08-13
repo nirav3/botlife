@@ -102,6 +102,10 @@ export const getSession = async (
           include: { sets: { orderBy: [{ isWarmup: 'desc' }, { setNumber: 'asc' }] } },
           orderBy: { orderIndex: 'asc' },
         },
+        // Only the plan's difficulty is needed client-side, to notch down
+        // the no-history starting-weight estimate for Beginner plans — not
+        // the full plan (that's a separate fetch via /api/plans/:id).
+        plan: { select: { difficulty: true } },
       },
     });
 

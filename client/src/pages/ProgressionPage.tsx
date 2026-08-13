@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { TrendingUp, X } from 'lucide-react';
 import { progressionApi } from '@/api/progression';
 import { useUnits } from '@/hooks/useUnits';
+import { formatProgressionReason } from '@/lib/progressionReason';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import type { ProgressionSuggestion } from '@/types';
@@ -163,14 +164,7 @@ function SuggestionCard({
   const suggestedDisplay = units.kgToDisplay(s.suggestedWeightKg);
   const decimals = units.isImperial ? 0 : 1;
 
-  // Re-format the reason string to use display units
-  const reasonDisplay = s.reason.replace(
-    /(\d+(?:\.\d+)?)\s*kg/g,
-    (_match, kgVal: string) => {
-      const display = units.kgToDisplay(parseFloat(kgVal));
-      return `${display.toFixed(decimals)} ${units.weightUnit}`;
-    }
-  );
+  const reasonDisplay = formatProgressionReason(s.reasonKey, s.reasonParams, units);
 
   return (
     <Card className={selected ? 'ring-2 ring-accent-violet' : ''}>
@@ -178,6 +172,16 @@ function SuggestionCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="font-semibold text-ink">{s.exerciseName}</p>
+            <span
+              className="text-xs bg-surface-2 text-muted px-2 py-0.5 rounded-full"
+              title={
+                s.progressionType === 'weight'
+                  ? 'This exercise progresses by adding weight — reps stay fixed'
+                  : 'This exercise progresses by adding reps — weight stays fixed until a rep ceiling is hit'
+              }
+            >
+              {s.progressionType === 'weight' ? 'Weight progression' : 'Rep progression'}
+            </span>
             {s.readyForProgression && (
               <span className="text-xs bg-surface-2 text-accent-violet px-2 py-0.5 rounded-full font-medium">
                 Increase now
