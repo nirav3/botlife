@@ -2,6 +2,8 @@ import 'dotenv/config';
 import path from 'path';
 import app from './app';
 import { ensurePlansSeeded } from './services/planSeed.service';
+import { ensureExerciseCatalogSeeded } from './services/exerciseCatalogSeed.service';
+import { loadExerciseCatalogCache } from './services/exerciseCatalog.service';
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0'; // bind to all network interfaces
@@ -24,6 +26,8 @@ process.on('uncaughtException', (err) => {
 
 async function start() {
   await ensurePlansSeeded();
+  await ensureExerciseCatalogSeeded();
+  await loadExerciseCatalogCache();
 
   const server = app.listen(parseInt(String(PORT)), HOST, () => {
     const addr = server.address();

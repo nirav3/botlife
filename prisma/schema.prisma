@@ -23,6 +23,68 @@ enum Sex {
   FEMALE
 }
 
+// ─── Exercise Catalog ───────────────────────────────────────────────────────
+// Structured facts about known exercises, so classification (equipment,
+// body region, weight- vs. rep-progression, ...) is a lookup instead of a
+// keyword guess against the free-text ExerciseLog/PlanExercise.name field.
+// Not exhaustive by design — anything not in here (a custom or AI-generated
+// exercise name) falls back to the existing keyword heuristics in
+// progression.service.ts / defaultWeight.ts, so an unmatched exercise
+// degrades gracefully rather than breaking.
+
+enum ExerciseBodyRegion {
+  UPPER
+  LOWER
+  FULL_BODY
+}
+
+enum ExerciseMovementPattern {
+  COMPOUND    // multi-joint — 0.8x bodyweight starting-estimate category
+  ISOLATION   // single-joint — 0.2x bodyweight starting-estimate category
+}
+
+enum ExerciseEquipment {
+  BARBELL
+  DUMBBELL
+  MACHINE
+  CABLE
+  KETTLEBELL
+  BODYWEIGHT
+  BAND
+  OTHER
+}
+
+enum ExerciseLoadConvention {
+  TOTAL                 // one number is the whole load (barbell, machine stack, cable stack)
+  PER_SIDE              // one number is what's held in EACH hand (dumbbell curl, DB press)
+  BODYWEIGHT            // no added load — suggest 0, progress via reps
+  BODYWEIGHT_LOADABLE   // bodyweight base, but a belt/vest can add load (weighted pull-up/dip)
+  TIME                  // duration-based (plank) — weight/reps don't cleanly apply
+}
+
+enum ExerciseProgressionType {
+  WEIGHT   // add load session over session, reps held at a fixed target
+  REPS     // add reps session over session, weight held fixed until a rep ceiling
+}
+
+model ExerciseCatalog {
+  id              String                   @id @default(cuid())
+  name            String                   @unique
+  aliases         String[]                 @default([])
+  muscleGroup     String
+  bodyRegion      ExerciseBodyRegion
+  movementPattern ExerciseMovementPattern
+  equipment       ExerciseEquipment
+  loadConvention  ExerciseLoadConvention
+  // Null for TIME-based movements (planks, holds) where the weight/reps
+  // progression axis doesn't cleanly apply.
+  progressionType ExerciseProgressionType?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@map("exercise_catalog")
+}
+
 model User {
   id                   String     @id @default(cuid())
   email                String     @unique
